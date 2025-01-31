@@ -8,31 +8,38 @@ import pandas as pd
 import numpy as np
 import itertools
 
+combi = sorted([''.join(ii) for ii in itertools.combinations([str(i) for i in range(1, 6)], r=3)])
+
 exp1Dir = '/Users/soankim/Documents/MATLAB/Meta/new_exp1.csv'
 exp2Dir = '/Users/soankim/Documents/MATLAB/Meta/new_exp2.csv'
 
 df1 = pd.read_csv(exp1Dir, index_col=0)
 df2 = pd.read_csv(exp2Dir, index_col=0)
 
+
+def idxCoding(df):
+    choIdxLi = []
+    ansIdxLi = []
+    for i, row in df.iterrows():
+        choIdx = combi.index(str(row['problem_solving']))
+        choIdxLi.append(choIdx)
+
+        ansIdx = combi.index(str(row['correct_response']))
+        ansIdxLi.append(ansIdx)
+
+    df['choIdx'] = choIdxLi
+    df['ansIdx'] = ansIdxLi
+
+    return df
+
+
+df1 = idxCoding(df1)
+df2 = idxCoding(df2)
+
 exp1Subj = df1.prolific_id.unique()
 exp2Subj = df2.prolific_id.unique()
 
-df1Subj1 = df1.loc[df1.prolific_id == exp1Subj[1]]
-
-def digitCard(df):
-    color = ["red", "yellow", "green"]
-    fill = ["open", "striped", "solid"]
-    shape = ["circle", "triangle", "square"]
-    back = ["black", "grey", "white"]
-    attributes = [color, fill, shape, back]
-    digitM = np.zeros((df.shape[0], 5, 4))
-    for row in range(df.shape[0]):
-        for five in range(5):
-            for att in range(4):
-                one = newDf.iloc[row, five]
-                val = attributes[att].index(one[att])
-                digitM[row, five, att] = val
-    return digitM
+df1Subj1 = df1.loc[df1.prolific_id == exp1Subj[0]]
 
 
 def separateCards(df):
@@ -50,12 +57,22 @@ def separateCards(df):
     five = df['five'].str.rstrip(".png").str.split("_")
     cardDf = pd.concat([one, two, three, four, five], axis=1)
 
-    return ansM, cardDf
+    return cardDf, ansM
 
-ansM, newDf = separateCards(df1Subj1)
-mat = digitCard(newDf)
-print(mat)
-print(ansM)
 
-# for five in allCards:
-#     digitCard(five)
+def digitCard(df):
+    newDf, ansM = separateCards(df)
+    color = ["red", "yellow", "green"]
+    fill = ["open", "striped", "solid"]
+    shape = ["circle", "triangle", "square"]
+    back = ["black", "grey", "white"]
+    attributes = [color, fill, shape, back]
+    digitM = np.zeros((newDf.shape[0], 5, 4))
+    for row in range(df.shape[0]):
+        for five in range(5):
+            for att in range(4):
+                one = newDf.iloc[row, five]
+                val = attributes[att].index(one[att])
+                digitM[row, five, att] = val
+
+    return digitM, ansM

@@ -6,14 +6,30 @@
 
 from humanData import *
 from collections import defaultdict
+from createNode import node
 
 stim, label = digitCard(df1Subj1)
 
 
-class qLearning:
-    def __init__(self, stim, label):
-        self.stim = stim
-        self.label = label
-        self.qTable = np.zeros((len(label), 12))
+class learning:
+    def __init__(self, state, actFunc=None):
+        self.state = state
         self.buffer = defaultdict()
-    def
+        self.actFunc = actFunc
+
+    def chooseAction(self):
+        actionAvail = validateAction(self.state)
+        if self.actFunc:
+            action = self.actFunc(self.state)
+        else:
+            action = UCB(self.state)
+
+    def nextState(self):
+        """s_{t+1} = (s_{t}, a_{t+1})"""
+        nextS = self.state[self.action]
+        return node(nextS)
+
+    def train(self):
+        for t in range(len(self.stim)):
+            obs = self.stim[t]
+            elements = 
