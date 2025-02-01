@@ -3,30 +3,37 @@
 # Created by Soan Kim (https://github.com/SoanKim) at 10:49 on 24/1/25
 # Title: (Enter feature name here)
 # Explanation: (Enter explanation here)
+
 from humanData import *
+from mcts import *
+from copy import deepcopy
+
 from collections import defaultdict
 
-class prbInit:
+class Table():
     def __init__(self, df=None):
         df = df1Subj1 if None else df
         # self.prbM = np.zeros((len(df), 10, 3, 4))
         self.actionAvail = []
         self.env = digitCard(df)  # (prbLen, 5, 4)
+        self.stim, self.answer = self.env
         self.leafLen = np.zeros((len(df), 3, 4))
         self.leafVal = np.zeros((len(df), 3, 4))
 
-    def genLeaf(self):
-        """
-        * dims:
-        ColorCand: [[[8], [0, 1, 2, 3, 4, 5, 6, 7, 9], []]
-        FillCand: [[8], [0, 1, 2, 3, 4, 5, 6, 7, 9], []]
-        ShapeCand: [[], [0, 1, 2, 4, 7, 9], [3, 5, 6, 8]]
-        BackCand: [[4], [0, 2, 3, 5, 7, 9], [1, 6, 8]]]
+        self.position = {}
+        self.initMove = np.zeros((len(df), 3, 4))
 
-        * self.leafVal:
-        Same -> C,F,S,B: [[1. 1. 0. 1.] -> [1, 1, 0, 1]
-        Err -> C,F,S,B: [9. 9. 6. 6.] -> [1/9, 1/9, 1/6, 1/6]
-        Diff -> C,F,S,B: [0. 0. 4. 3.]] -> [0, 0, 1/4, 1/3]
+        # create a copy of a previous table state if available
+        if table is not None:
+            self.__dict__ = deepcopy(table.__dict.__)
+
+    def genLeafVal(self):
+        """
+        * dims:                                                    * self.leafVal:
+        ColorCand: [[[8], [0, 1, 2, 3, 4, 5, 6, 7, 9], []]         Same -> C,F,S,B: [[1. 1. 0. 1.] -> [1, 1, 0, 1]
+        FillCand: [[8], [0, 1, 2, 3, 4, 5, 6, 7, 9], []]           Err -> C,F,S,B: [9. 9. 6. 6.] -> [1/9, 1/9, 1/6, 1/6]
+        ShapeCand: [[], [0, 1, 2, 4, 7, 9], [3, 5, 6, 8]]          Diff -> C,F,S,B: [0. 0. 4. 3.]] -> [0, 0, 1/4, 1/3]
+        BackCand: [[4], [0, 2, 3, 5, 7, 9], [1, 6, 8]]]
         """
         combi = [list(i) for i in itertools.combinations(list(range(5)), r=3)]
         for prb_i, (stim, ans) in enumerate(self.env):
@@ -34,7 +41,6 @@ class prbInit:
             dims = []
             prbCand = [[], [], []]
             for dim in range(4):
-
                 three = dimStim[dim]
                 elemCand = [[], [], []]
                 for combi_i, c in enumerate(combi):
@@ -53,6 +59,38 @@ class prbInit:
                     self.leafLen[prb_i, elem, dim] = len(dims[dim][elem])
                     # np.sum(length[prb_i], axis=0) = [10. 10. 10. 10.]
         return self.actionAvail, self.env, self.leafLen, self.leafVal
+
+    def make_move(self, prbIdx, row, col):  # row, col from ucb select
+        self.initMove[prbIdx, row, col] = 1
+
+    def is_win(self, finalChoice, prbIdx):
+        if finalChoice == self.answer[prbIdx]:
+            return True
+
+    def is_lose(self, finalChoice, prbIdx):
+        if finalChoice != self.answer[prbIdx]:
+            return True
+
+    def is_terminal(self, finalChoice, prbIdx):
+        if self.is_win(self, finalChoice, prbIdx) or self.is_lose(self, finalChoice, prbIdx):
+            return True
+
+    def generate_states(self):
+        positionAvail = []
+        for row in range(3):
+            for col in range(4):
+                if self.position[row, col] == 0:
+                    positionAvail.append(self.make_move(row, col))
+
+        return positionAvail
+
+    def getReward(self, prbIdx):
+        if self.is_terminal:
+            if self.is_win:
+                reward = 1 + self.leafVal[prbIdx]
+
+
+
 
 
 

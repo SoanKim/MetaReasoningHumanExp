@@ -6,16 +6,17 @@
 
 from envStructure import *
 
+
 class node:
     def __init__(self, prbIdx, state=None, action=None, parent=None, actionFunc = None):
         self.prbIdx = prbIdx if prbIdx else 0
-        self.actionAvail, self.env, self.leafLen, self.leafVal = prbInit().genLeaf()
+        self.actionAvail, self.env, self.leafLen, self.leafVal = Table().genLeafVal()
         self.N = 0
         self.Q = 0
 
         self.children = []
         stim, answer = self.env
-        self.root = stim[self.prbIdx] # (3 * 4)
+        self.root = stim[self.prbIdx]  # (3 * 4)
         self.answer = answer[self.prbIdx]
 
         self.state = state if state else self.root
@@ -50,7 +51,7 @@ class node:
         self.reward = self.leafVal[self.action] + rwd
         return self.reward
 
-    def backpropagate(self, reward):
+    def backprop(self, reward):
         """ Updates reward and visit counts, propagating up the tree. """
         # Increment the number of visits
         self.N += 1
