@@ -37,20 +37,12 @@ class Node:
     4. reward
     """
 
-    def __init__(self, prbIdx, current=None, state=None, parentAction=None, parent=None):
+    def __init__(self, current=None, state=None, parentAction=None, parent=None):
         """
         This is the total env and going to be looping through trials.
         """
-        self.prbIdx = prbIdx if prbIdx else 0
-        # _actionAvail: all possible actions of each state
-        self.actionAvail, self.env, self.leafLen, self.leafVal = Game().genLeafVal()
-
-        # stim and answer are for each trial
-        stim, answer = self.env
-        self.prb = stim[self.prbIdx]  # (3 * 4)
-        self.answer = answer[self.prbIdx]
-
-        self.state = state if state is not None else self.prb
+        self.prbInit = Game.initPrb()
+        self.state = state
         self.parentAction = parentAction
         self.parent = parent
 
@@ -69,16 +61,15 @@ class Node:
         # A state node has child nodes ((state, action) pairs)
         self.children = dict()
 
-    def hasChildren(self):
+    def addChild(self, children: dict) -> None:
+        for child in children:
+            self.children[child.action] = child
+
+    def isExpanded(self):
         """
         Check if this is a leaf node.
         If not a leaf node,
-        choose the best child maximizing UCB.
-        """
-        return len(self.children) > 0
-
-    def isVisited(self):
-        """
+        choose the best child maximizing UCB1.
         If never been sampled, roll out.
         Else, add the new state and select the random child
         """
