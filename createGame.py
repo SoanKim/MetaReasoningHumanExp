@@ -5,12 +5,12 @@
 # Explanation: (Enter explanation here)
 
 from humanData import *
-from mcts import *
-from copy import deepcopy
 
-from collections import defaultdict
 
-class Table():
+class Game:
+    """
+    This class receives true stimuli from human data and prepares it to calculate leaf values.
+    """
     def __init__(self, df=None):
         df = df1Subj1 if None else df
         # self.prbM = np.zeros((len(df), 10, 3, 4))
@@ -20,12 +20,12 @@ class Table():
         self.leafLen = np.zeros((len(df), 3, 4))
         self.leafVal = np.zeros((len(df), 3, 4))
 
-        self.position = {}
-        self.initMove = np.zeros((len(df), 3, 4))
+        # coordinates of row, column
+        self._current = None
 
-        # create a copy of a previous table state if available
-        if table is not None:
-            self.__dict__ = deepcopy(table.__dict.__)
+        # navigation: row: elements, columns: dimensions
+        self.navi = np.zeros((len(df), 3, 4))
+        self.combi = [list(i) for i in itertools.combinations(list(range(5)), r=3)]
 
     def genLeafVal(self):
         """
@@ -35,7 +35,6 @@ class Table():
         ShapeCand: [[], [0, 1, 2, 4, 7, 9], [3, 5, 6, 8]]          Diff -> C,F,S,B: [0. 0. 4. 3.]] -> [0, 0, 1/4, 1/3]
         BackCand: [[4], [0, 2, 3, 5, 7, 9], [1, 6, 8]]]
         """
-        combi = [list(i) for i in itertools.combinations(list(range(5)), r=3)]
         for prb_i, (stim, ans) in enumerate(self.env):
             dimStim = list(zip(*stim))
             dims = []
@@ -43,7 +42,7 @@ class Table():
             for dim in range(4):
                 three = dimStim[dim]
                 elemCand = [[], [], []]
-                for combi_i, c in enumerate(combi):
+                for combi_i, c in enumerate(self.combi):
                     vals = [three[cc] for cc in c]
                     lenVal = len(set(vals))-1
                     elemCand[lenVal].append(combi_i)
@@ -60,8 +59,12 @@ class Table():
                     # np.sum(length[prb_i], axis=0) = [10. 10. 10. 10.]
         return self.actionAvail, self.env, self.leafLen, self.leafVal
 
-    def make_move(self, prbIdx, row, col):  # row, col from ucb select
-        self.initMove[prbIdx, row, col] = 1
+
+
+ # Is this for a node?
+    def move(self, prbIdx, row, col):  # row, col from ucb select
+        self.navi[prbIdx, row, col] = 1
+        return self.navi
 
     def is_win(self, finalChoice, prbIdx):
         if finalChoice == self.answer[prbIdx]:
@@ -71,16 +74,16 @@ class Table():
         if finalChoice != self.answer[prbIdx]:
             return True
 
-    def is_terminal(self, finalChoice, prbIdx):
-        if self.is_win(self, finalChoice, prbIdx) or self.is_lose(self, finalChoice, prbIdx):
+    def is_terminal(self):
+        if self.is_win or self.is_lose:
             return True
 
-    def generate_states(self):
+    def generate_states(self, row, col):
         positionAvail = []
         for row in range(3):
             for col in range(4):
-                if self.position[row, col] == 0:
-                    positionAvail.append(self.make_move(row, col))
+                if self.navi[row, col] == 0:
+                    positionAvail.append(self.move(row, col))
 
         return positionAvail
 
