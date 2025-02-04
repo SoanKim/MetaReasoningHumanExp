@@ -24,6 +24,8 @@ And also update the V and Q of the root node.
 
 After all nodes are already visited, chose the best child of the highest UCB and expand.
 """
+
+
 class Node:
     """
     A representation of a single board state.
@@ -37,11 +39,14 @@ class Node:
     4. reward
     """
 
-    def __init__(self, current=None, state=None, parentAction=None, parent=None):
+    def __init__(self, state=None, parentAction=None, parent=None):
         """
         This is the total env and going to be looping through trials.
         """
-        self.prbInit = Game.initPrb()
+        self.game = Game()
+        self.prb, self.answer = self.game.initPrb()
+        self.actionAvail = self.game.actionAvail()
+        self.leafVal = self.game.genLeafVal()
         self.state = state
         self.parentAction = parentAction
         self.parent = parent
@@ -55,17 +60,20 @@ class Node:
         # Q is for (state, action) pairs only.
         self.Q = defaultdict(int)
 
-        # This is rewards
-        self.result = defaultdict(int)
+        # This is a replay buffer of state(s0, s1, s2), action, reward
+        self.memory = defaultdict(dict)
 
-        # A state node has child nodes ((state, action) pairs)
+        # A state node has child nodes state and action pairs)
         self.children = dict()
+
+        self.terminalAction = None
 
     def addChild(self, children: dict) -> None:
         for child in children:
             self.children[child.action] = child
 
-    def isExpanded(self):
+    @property
+    def isFullyExpanded(self):
         """
         Check if this is a leaf node.
         If not a leaf node,
@@ -73,7 +81,7 @@ class Node:
         If never been sampled, roll out.
         Else, add the new state and select the random child
         """
-        return len(self.children) > 0
+        return len(self.memory['s2']) > 0
 
     def isTerminal(self):
         """
@@ -81,12 +89,16 @@ class Node:
         If never been sampled, roll out with state and random action.
         Else, add the new state and select the random child
         """
-        return np.sum(len(self.actionAvail)) == 0 and len(self.children) > 0
+        return np.sum(len(self.actionAvail)) == 0
 
-    def getReward(self, terminalAction):
-        if terminalAction == self.answer:
-            rwd = 1
-        else:
-            rwd = 0
-        reward = self.leafVal[terminalAction] + rwd
+    def getReward(self):
+        global reward
+        if self.N == 0:
+            reward = 0 if self.N == 0 else -np.inf
+        elif self.terminalAction:
+            if self.terminalAction == self.answer:
+                rwd = 1
+            else:
+                rwd = 0
+            reward = self.leafVal[self.terminalAction] * rwd
         return reward

@@ -4,71 +4,108 @@
 # Title: (Enter feature name here)
 # Explanation: (Enter explanation here)
 
+from createGame import *
 from createNode import Node
+from copy import deepcopy
+import numpy as np
 import random
+import math
 
 
 class MCTS:
     """
     This requires node and generates a tree.
+    Select --> Expand --> Simulate --> Backup
     """
 
-    def search(self, initialState, numIter):
-        self.exploration_constant = 2
-        self.root = Node(initialState, None)
-
-        for iteration in range(numIter):
-            node = self.select(self.root)
-            score = self.rollout(node.table) #???
-            self.backprop(node, score)
-
-            return self.get_best_move(self.root)
+    def __init__(self, game, policy=None, exploration_constant=2):  # game is the problem with index
+        self.exploration_constant = exploration_constant
+        self.game = game
+        self.policy = policy
+        self.root = Node(game)  # init problem
+        self.node = deepcopy(self.root)
+        self.searchPath = [self.node]
 
     def UCB(self, child):
         """
         Calculate UCB of each child
         """
-        if self.N:
-            self.V += child.V / child.N
-            self.V = self.V + 2 * math.sqrt(math.log(self.parent.N) / child.N)
+        parent = self.searchPath[-2]
+        if child.N > 0:
+            child.Q += child.V / child.N
+            ucb = child.Q + 2 * math.sqrt(math.log(parent.N) / child.N)
         else:
-            self.V = 0
+            ucb = 0
+        return ucb
 
-    def select(self, node):
+    def selectNode(self):
         """
         Tree traversal using UCB1.
         """
-        while not node.is_terminal:
-            if node.is_fully_expanded:
-                node = self.get_best_move(node)
 
+        if self.node.isFullyExpanded:
+            childrenQ = self.node.Q
+            maxChildQ = max(childrenQ, key=lambda x: x.value()).value()
+            if self.policy is None:
+                bestChild = [c for c in self.node.children if c.value() == maxChildQ]
             else:
-                return self.expand(node)
+                bestChild = random.choice(self.node.children)
 
-    def expand(self, node):
-        states = node.table.generate_states()
+            self.node = self.node.children[''].append(bestChild)
 
-        for state in states:
-            if str(state.position) not in node.children:
-                new_node = Node(state, node)
-                node.children[str(state.position)] = new_node
+            node = np.random.choice(bestChild)
+            self.node.move(node.move)
 
-                if len(states) == len(node.children):
-                    node.is_fully_expanded = True
+        bestChild = None
+        bestUCB = -np.inf
 
-                return new_node
-        # debugging
-        print('Should not get here!!!')
+        for child in self.node.children:
+            ucb = self.UCB(child)
+            if ucb > bestUCB:
+                bestChild = child
+                bestUCB = ucb
+        return bestChild
 
     def expand(self):
-        navi = Node().move(self.prbIdx, self.current[0], self.current[1])
-        actions = self.actionAvail[self.prbIdx][self.current[0]][self.current[1]]
-        nextState = self.action_func(self.state, self.actionAvail)
-        """s_{t+1} = (s_{t}, a_{t+1})"""
-        childNode = Node(nextState)
-        self.children.append(childNode)
-        return self.children if len(self.children) != 0 else None
+        # https://joshvarty.github.io/AlphaZero/
+        while self.node.expanded():
+            action, node = self.selectNode()
+            self.searchPath.append(node)
 
+        parent = self.search_path[-2]
+        state = parent.state
+        next_state, _ = self.game.get_next_state(state, to_play=1, action=action)
+        next_state = self.game.get_canonical_board(next_state, player=-1)
+        value = self.game.get_reward_for_player(next_state, player=1)
+        if value is None:
+            # EXPAND
+            value = node.expand(self.model, self.game, next_state, parent.to_play * -1)
+
+        self.backup(self.search_path, value, parent.to_play * -1)
+
+    return root
+
+
+    #     for state in states:
+    #         if str(state.position) not in node.children:
+    #             new_node = Node(state, node)
+    #             node.children[str(state.position)] = new_node
+    #
+    #             if len(states) == len(node.children):
+    #                 node.is_fully_expanded = True
+    #
+    #             return new_node
+    #     # debugging
+    #     print('Should not get here!!!')
+    #
+    # def expand(self):
+    #     navi = Node().move(self.prbIdx, self.current[0], self.current[1])
+    #     actions = self.actionAvail[self.prbIdx][self.current[0]][self.current[1]]
+    #     nextState = self.action_func(self.state, self.actionAvail)
+    #     """s_{t+1} = (s_{t}, a_{t+1})"""
+    #     childNode = Node(nextState)
+    #     self.children.append(childNode)
+    #     return self.children if len(self.children) != 0 else None
 
     def rollout(self, table):
         """

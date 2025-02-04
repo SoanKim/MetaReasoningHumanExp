@@ -41,7 +41,6 @@ exp2Subj = df2.prolific_id.unique()
 
 df1Subj1 = df1.loc[df1.prolific_id == exp1Subj[0]]
 
-
 def separateCards(df):
     combi = sorted([''.join(ii) for ii in itertools.combinations([str(i) for i in range(1, 6)], r=3)])
     ansM = np.zeros((df.shape[0],))
@@ -75,4 +74,5 @@ def digitCard(df):
                 val = attributes[att].index(one[att])
                 digitM[row, five, att] = val
 
-    return digitM, ansM
+    return [digitM, ansM]
+
