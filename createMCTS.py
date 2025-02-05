@@ -17,74 +17,62 @@ class MCTS:
     This requires node and generates a tree.
     Select --> Expand --> Simulate --> Backup
     """
-
-    def __init__(self, game, policy=None, exploration_constant=2):  # game is the problem with index
+    def __init__(self, game, parent=None, policy=None, exploration_constant=2):  # game is the problem with index
         self.exploration_constant = exploration_constant
         self.game = game
         self.policy = policy
         self.root = Node(game)  # init problem
         self.node = deepcopy(self.root)
-        self.searchPath = [self.node]
+        self.parent = parent
 
     def UCB(self, child):
         """
         Calculate UCB of each child
         """
-        parent = self.searchPath[-2]
         if child.N > 0:
             child.Q += child.V / child.N
-            ucb = child.Q + 2 * math.sqrt(math.log(parent.N) / child.N)
+            ucb = child.Q + 2 * math.sqrt(math.log(self.parent.N) / child.N)
         else:
             ucb = 0
         return ucb
 
-    def selectNode(self):
+    def selectNode(self):  # Should select from the navi position
         """
-        Tree traversal using UCB1.
+        Tree traversal using either mere valueUCB1.
         """
-
-        if self.node.isFullyExpanded:
-            childrenQ = self.node.Q
-            maxChildQ = max(childrenQ, key=lambda x: x.value()).value()
-            if self.policy is None:
-                bestChild = [c for c in self.node.children if c.value() == maxChildQ]
-            else:
-                bestChild = random.choice(self.node.children)
-
-            self.node = self.node.children[''].append(bestChild)
-
-            node = np.random.choice(bestChild)
-            self.node.move(node.move)
-
-        bestChild = None
+        bestChild = []  # It can be plural
         bestUCB = -np.inf
 
         for child in self.node.children:
             ucb = self.UCB(child)
             if ucb > bestUCB:
-                bestChild = child
-                bestUCB = ucb
+                bestChild.append(child)
+                bestUCB += ucb
+
+        # In case bestChild is plural
+        bestChild = random.choice(bestChild)
+        self.node.memory['bestChild'] = bestChild
+        self.node.memory['bestUCB'] = bestUCB
+
         return bestChild
 
     def expand(self):
         # https://joshvarty.github.io/AlphaZero/
-        while self.node.expanded():
-            action, node = self.selectNode()
-            self.searchPath.append(node)
+        while len(self.node.children()) > 0:
+            action = self.selectNode()
+            self.searchPath.append(action)
 
-        parent = self.search_path[-2]
-        state = parent.state
-        next_state, _ = self.game.get_next_state(state, to_play=1, action=action)
-        next_state = self.game.get_canonical_board(next_state, player=-1)
-        value = self.game.get_reward_for_player(next_state, player=1)
-        if value is None:
-            # EXPAND
-            value = node.expand(self.model, self.game, next_state, parent.to_play * -1)
+            parent = self.searchPath[-2]
+            # parent.state: coordinates
+            actionAvail = self.game.generateStates(row=parent.state[0], col=parent.state[1])
+            action = self.selectNode()
+            nextState = parent.state, action
 
-        self.backup(self.search_path, value, parent.to_play * -1)
+            if value is None:
+                # EXPAND
+                value = self.node.move(parent.state, nextState)
 
-    return root
-
+            self.backup(self.searchPath, value)
 
     #     for state in states:
     #         if str(state.position) not in node.children:
@@ -113,7 +101,7 @@ class MCTS:
         """
         while not Game.isTerminal:
             try:
-                table = random.choice(table.generate_states())
+                table = random.choice(table.generateStates())
 
             except:
                 return 0

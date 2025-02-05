@@ -39,17 +39,16 @@ class Node:
     4. reward
     """
 
-    def __init__(self, state=None, parentAction=None, parent=None):
+    def __init__(self, state=None, parentAction=None):
         """
         This is the total env and going to be looping through trials.
         """
         self.game = Game()
-        self.prb, self.answer = self.game.initPrb()
-        self.actionAvail = self.game.actionAvail()
-        self.leafVal = self.game.genLeafVal()
-        self.state = state
+        self.prb, self.prbAnswer = self.game.initPrb()
+        self.cardAvail, self.leafVal = self.game.genLeafVal()
+
+        self.state = state  # row and column coordinates
         self.parentAction = parentAction
-        self.parent = parent
 
         # current = row: element, column: dim
         self.current = None
@@ -60,10 +59,7 @@ class Node:
         # Q is for (state, action) pairs only.
         self.Q = defaultdict(int)
 
-        # This is a replay buffer of state(s0, s1, s2), action, reward
-        self.memory = defaultdict(dict)
-
-        # A state node has child nodes state and action pairs)
+        # A state node has child nodes (state and action pairs))
         self.children = dict()
 
         self.terminalAction = None
@@ -96,7 +92,7 @@ class Node:
         if self.N == 0:
             reward = 0 if self.N == 0 else -np.inf
         elif self.terminalAction:
-            if self.terminalAction == self.answer:
+            if self.terminalAction == self.prbAnswer:
                 rwd = 1
             else:
                 rwd = 0
