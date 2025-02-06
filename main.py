@@ -4,12 +4,19 @@
 # Title: (Enter feature name here)
 # Explanation: (Enter explanation here)
 
-
+from humanData import *
 from agent import Agent
 from createGame import Game
 from createMCTS import MCTS
 from createNode import Node
 
-env = Game().initPrb()
-agent = Agent()
-for prb_i, prb in enumerate(env):
+data = df1Subj1
+# agent = Agent()
+for prb_i in range(len(data)):
+    states, actions, answer = Game(prb_i).prbInit()
+    parentAction =
+    print("####### prb_i: {} #######:".format(prb_i))
+    # print("states:", states)
+    # print("actions", actions)
+    # print("answer:", answer)
+    # print(np.zeros_like(states))

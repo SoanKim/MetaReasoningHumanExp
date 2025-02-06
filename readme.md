@@ -4,7 +4,13 @@
 ### 1. createGame.py: 
 - Initialize a problem (import a problem and answer from human data per trial) </br>
 - Map the problem structure into a grid.
+- Next state function
+- Terminal function
+- Reward function
 ```
+inputs: problem index, action chosen by MCTS
+outputs: state matrix (self.context), available cards on the leaf node(self.cardAvail list), answer (scalar)
+
 self.actions (3*5)
 | R | C | F | S | B |
 |---|---|---|---|---|
@@ -19,7 +25,7 @@ np.argwhere (self.navi)
 | 1 0 | 1 1 | 1 2 | 1 3 | 1 4 |
 | 2 0 | 2 1 | 2 2 | 2 3 | 2 4 |
 
-self.contexts (one example)
+self.contexts (one example): mapping the structure of a problem into a table
 | R | C | F | S | B |
 |---|---|---|---|---|
 | 3 | 1 | 1 | 0 | 1 |
@@ -32,7 +38,7 @@ outputs: problem (self.prb) -> array, shape: (5, 4)
          card candidates per leaf(self.cardAvail) -> list, len(3), with 4 dimensions by 3 embedded.
          and the leaf value penalizeing based on the num of candidates (self.leafVal) -> array(3, 4)
 ```
-### 2. createNode.py: *How do you structure problems into nodes?*
+### 2. createNode.py:
 - Turn each (state) or (state, action) into nodes </br>
 - Nodes are memory-less.
 - The node does not store contexts: only place-holder-like states, the chosen actions (S-A-S'-A'), and UCB1.

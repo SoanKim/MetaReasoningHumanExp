@@ -29,7 +29,7 @@ After all nodes are already visited, chose the best child of the highest UCB and
 class Node:
     """
     A representation of a single board state.
-    This class receives game trials and change each state and action into nodes.
+    This class receives "states," "actions," "answer" and change "states" and "actions" into nodes.
     MCTS constructs a tree of these Nodes.
 
     everything regarding prbIdx (which is not for the Game function)
@@ -39,16 +39,14 @@ class Node:
     4. reward
     """
 
-    def __init__(self, state=None, parentAction=None):
+    def __init__(self, state, actionAvail):
         """
         This is the total env and going to be looping through trials.
         """
         self.game = Game()
-        self.prb, self.prbAnswer = self.game.initPrb()
-        self.cardAvail, self.leafVal = self.game.genLeafVal()
 
         self.state = state  # row and column coordinates
-        self.parentAction = parentAction
+        self.actionAvail = actionAvail
 
         # current = row: element, column: dim
         self.current = None

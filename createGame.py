@@ -13,10 +13,11 @@ class Game:
     This class receives true stimuli from human data and prepares it to calculate leaf values.
     """
 
-    def __init__(self, prbIdx=None):
+    def __init__(self, prbIdx=None, action=None):
 
         df = df1Subj1
         self.prbIdx = prbIdx if prbIdx else 0
+        self.action
         self.env = digitCard(df)  # (prbLen, 5, 4)
         self.stim = self.env[0]
         self.answer = self.env[1]
@@ -25,7 +26,7 @@ class Game:
         self.contextM = np.zeros((len(df), 3, 5))
 
         # possible actions
-        self.cardAvail = []
+        self.cardAvail = []  # list of len(3): [[[], [], [], []], [[], [], [], []], [[], [], [], []]]
 
         # prb and answer of one trial
         self.prb = None
@@ -34,7 +35,7 @@ class Game:
         # navigation: row: elements, columns: dimensions
         self.combi = [list(i) for i in itertools.combinations(list(range(5)), r=3)]
 
-    def genLeafVal(self):
+    def prbInit(self):
         """
         * dims:                                                    * self.leafVal:
         ColorCand: [[[8], [0, 1, 2, 3, 4, 5, 6, 7, 9], []]         Same -> C,F,S,B: [[1. 1. 0. 1.] -> [1, 1, 0, 1]
@@ -71,29 +72,18 @@ class Game:
                     self.leafLen[prb_i, elem, dim] = len(dims[dim][elem])
                     self.contextM[prb_i, :, 0] = np.sum(self.leafLen[prb_i], axis=1)
                     self.contextM[prb_i, :, 1:] = self.leafLen[prb_i]
-        print(self.contextM[0])
-        print(np.argwhere(self.contextM[0]))
-        print(self.contextM[0][1, 0])
-        # return self.cardAvail[self.prbIdx], self.leafVal[self.prbIdx]
 
-    def initPrb(self):
-        """
-        initialize each prb and the navi
-        """
-        # stim and answer are for each trial
-        self.prb = self.stim[self.prbIdx]  # (3 * 4)
-        self.prbAnswer = self.answer[self.prbIdx]
+        # contextM, candidates from leaf nodes, answer
+        return self.contextM[self.prbIdx], self.cardAvail[self.prbIdx], self.answer[self.prbIdx]
 
-        return self.prb, self.prbAnswer
 
-    def genPrbMat(self):
-        self.prb, self.prbAnswer = self.initPrb()
 
 
 if __name__ == "__main__":
     game = Game()
     #prb, ans = game.initPrb()
-    cards, val = game.genLeafVal()
+    states, actions, answer = game.prbInit()
+
 
     # print(type(cards))
     # print(type(val))
