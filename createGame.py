@@ -83,7 +83,6 @@ class Game:
         return positionAvail
 
     def move(self, timeStep, action):
-        print("################################")
         """
         Let's do this way:
         All the nodes are spread after the root, so we don't mark it.
@@ -98,42 +97,20 @@ class Game:
             element = np.argwhere(self.navi[self.prbIdx, :, 0] == 1).item()
             positionAvail = self.legalMove(element)
             if action in positionAvail:
-                if np.sum(self.navi[self.prbIdx, element, :]) < 4:
-                    print("The current state is s{} and NOT fully expanded".format(timeStep))
-                else:
-                    print("The current state is s{} and fully expanded".format(timeStep))
-                self.navi[self.prbIdx, element, action + 1] = 1
+                if np.sum(self.navi[self.prbIdx, element, :]) < 5:
+                    self.navi[self.prbIdx, element, action + 1] = 1
             else:
-                print("Illegal move!")
-        # nextState = [t, action]
-        print(self.navi[self.prbIdx])
-        return self.navi[self.prbIdx]
+                raise ValueError("Illegal move!")
+            nextState = [element, action]
+            return nextState
 
-    # def isTerminal(self):
-    #     """
-    #     Loop forever:
-    #     If never been sampled, roll out with state and random action.
-    #     Else, add the new state and select the random child
-    #     """
-    #     return np.sum(self.contextM,
-    #
-    # def getReward(self):
-    #     global reward
-    #     if self.N == 0:
-    #         reward = 0 if self.N == 0 else -np.inf
-    #     elif self.terminalAction:
-    #         if self.terminalAction == self.prbAnswer:
-    #             rwd = 1
-    #         else:
-    #             rwd = 0
-    #         reward = self.leafVal[self.terminalAction] * rwd
-    #     return reward
+    def fullyExpanded(self, element):
+        return np.sum(self.navi[self.prbIdx, element, :]) == 5
 
-# if __name__ == "__main__":
-#     game = Game()
-#     #prb, ans = game.initPrb()
-#     states, actions, answer = game.prbInit()
-
-
-    # print(type(cards))
-    # print(type(val))
+    def getReward(self, element, finalChoice):
+        if finalChoice == self.answer[self.prbIdx]:
+            rwd = 1
+        else:
+            rwd = 0
+        reward = self.leafVal[self.prbIdx, element, finalChoice] * rwd
+        return reward
