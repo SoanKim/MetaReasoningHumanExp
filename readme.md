@@ -23,7 +23,7 @@ self.contexts (one example)
 | R | C | F | S | B |
 |---|---|---|---|---|
 | 3 | 1 | 1 | 0 | 1 |
-| 9 | 9 | 9 | 6 | 6 |
+| 30| 9 | 9 | 6 | 6 |
 | 7 | 0 | 0 | 4 | 3 |
 
 inputs: subject index (first subject) and problem index

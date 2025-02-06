@@ -22,6 +22,7 @@ class Game:
         self.answer = self.env[1]
         self.leafLen = np.zeros((len(df), 3, 4))
         self.leafVal = np.zeros((len(df), 3, 4))
+        self.contextM = np.zeros((len(df), 3, 5))
 
         # possible actions
         self.cardAvail = []
@@ -40,6 +41,11 @@ class Game:
         FillCand: [[8], [0, 1, 2, 3, 4, 5, 6, 7, 9], []]           Err -> C,F,S,B: [9. 9. 6. 6.] -> [1/9, 1/9, 1/6, 1/6]
         ShapeCand: [[], [0, 1, 2, 4, 7, 9], [3, 5, 6, 8]]          Diff -> C,F,S,B: [0. 0. 4. 3.]] -> [0, 0, 1/4, 1/3]
         BackCand: [[4], [0, 2, 3, 5, 7, 9], [1, 6, 8]]]
+
+        * self.context
+        [[ 7.  4.  1.  1.  1.]
+        [24.  6.  6.  6.  6.]
+        [ 9.  0.  3.  3.  3.]]
         """
         for prb_i, stim in enumerate(self.stim):
             dimStim = list(zip(*stim))
@@ -63,8 +69,12 @@ class Game:
                     self.leafVal[prb_i, elem, dim] = 0 if len(dims[dim][elem]) == 0 else np.round(
                         1 / len(dims[dim][elem]), 2)
                     self.leafLen[prb_i, elem, dim] = len(dims[dim][elem])
-
-        return self.cardAvail[self.prbIdx], self.leafVal[self.prbIdx]
+                    self.contextM[prb_i, :, 0] = np.sum(self.leafLen[prb_i], axis=1)
+                    self.contextM[prb_i, :, 1:] = self.leafLen[prb_i]
+        print(self.contextM[0])
+        print(np.argwhere(self.contextM[0]))
+        print(self.contextM[0][1, 0])
+        # return self.cardAvail[self.prbIdx], self.leafVal[self.prbIdx]
 
     def initPrb(self):
         """
@@ -76,11 +86,14 @@ class Game:
 
         return self.prb, self.prbAnswer
 
+    def genPrbMat(self):
+        self.prb, self.prbAnswer = self.initPrb()
+
 
 if __name__ == "__main__":
     game = Game()
-    prb, ans = game.initPrb()
+    #prb, ans = game.initPrb()
     cards, val = game.genLeafVal()
 
-    print(type(cards))
-    print(type(val))
+    # print(type(cards))
+    # print(type(val))
