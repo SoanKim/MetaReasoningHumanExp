@@ -5,18 +5,30 @@
 # Explanation: (Enter explanation here)
 
 from humanData import *
-from agent import Agent
 from createGame import Game
-from createMCTS import MCTS
-from createNode import Node
+import random
+
+# from agent import Agent
+# from createMCTS import MCTS
+# from createNode import Node
 
 data = df1Subj1
 # agent = Agent()
-for prb_i in range(len(data)):
-    states, actions, answer = Game(prb_i).prbInit()
-    parentAction =
-    print("####### prb_i: {} #######:".format(prb_i))
-    # print("states:", states)
-    # print("actions", actions)
-    # print("answer:", answer)
-    # print(np.zeros_like(states))
+for prb_i in range(1):
+    game = Game(prb_i)
+    contextM, cardAvail, answer, navi = game.prbInit()
+
+    element = 0
+    for timeStep in range(5):
+        if timeStep == 0:
+            element += random.choice(range(3))
+            game.move(timeStep, element)
+            print("element, {}".format(element))
+        else:
+            legalMoves = game.legalMove(element)
+            print("legal moves: {}".format(legalMoves))
+            action = random.choice(legalMoves)
+            nextState = game.move(timeStep, action)
+            print("action, {}".format(action))
+
+

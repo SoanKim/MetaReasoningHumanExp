@@ -17,16 +17,13 @@ class MCTS:
     This requires node and generates a tree.
     Select --> Expand --> Simulate --> Backup
     """
-    def __init__(self, game, parent=None, policy=None, exploration_constant=2):  # game is the problem with index
+    def __init__(self, state, exploration_constant=2):  # game is the problem with index
         self.exploration_constant = exploration_constant
-        self.game = game
-        self.policy = policy
-        self.root = Node(game)  # init problem
-        self.node = deepcopy(self.root)
-        self.parent = parent
+        self.node = deepcopy(state)
 
     def UCB(self, child):
         """
+        Tree policy:
         Calculate UCB of each child
         """
         if child.N > 0:
@@ -36,41 +33,34 @@ class MCTS:
             ucb = 0
         return ucb
 
-    def selectNode(self):  # Should select from the navi position
-        """
-        Tree traversal using either mere valueUCB1.
-        """
-        bestChild = []  # It can be plural
-        bestUCB = -np.inf
 
-        for child in self.node.children:
-            ucb = self.UCB(child)
-            if ucb > bestUCB:
-                bestChild.append(child)
-                bestUCB += ucb
-
-        # In case bestChild is plural
-        bestChild = random.choice(bestChild)
-        self.node.memory['bestChild'] = bestChild
-        self.node.memory['bestUCB'] = bestUCB
-
-        return bestChild
+    # def select(self):  # Should select from the navi position
+    #     """
+    #     Tree traversal using either mere valueUCB1.
+    #     """
+    #     bestChild = []  # It can be plural
+    #     bestUCB = -np.inf
+    #
+    #     for child in self.node.children:
+    #         ucb = self.UCB(child)
+    #         if ucb > bestUCB:
+    #             bestChild.append(child)
+    #             bestUCB += ucb
+    #
+    #     # In case bestChild is plural
+    #     bestChild = random.choice(bestChild)
+    #     return bestChild
 
     def expand(self):
-        # https://joshvarty.github.io/AlphaZero/
+        action =
         while len(self.node.children()) > 0:
-            action = self.selectNode()
-            self.searchPath.append(action)
-
-            parent = self.searchPath[-2]
-            # parent.state: coordinates
-            actionAvail = self.game.generateStates(row=parent.state[0], col=parent.state[1])
-            action = self.selectNode()
-            nextState = parent.state, action
+            action = self.select()
+            action = self.select()
+            nextState = parent.t, action
 
             if value is None:
                 # EXPAND
-                value = self.node.move(parent.state, nextState)
+                value = self.node.move(parent.t, nextState)
 
             self.backup(self.searchPath, value)
 

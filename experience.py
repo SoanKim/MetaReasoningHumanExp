@@ -25,7 +25,7 @@ class replayBuffer:
         """Randomly sample a batch of experiences from memory."""
         experiences = self.memory[self.stateIdx]
 
-        states = [e.state for e in experiences if e is not None]
+        states = [e.t for e in experiences if e is not None]
         contexts = [e.context for e in experiences if e is not None]
         actions = [e.action for e in experiences if e is not None]
         rewards = [e.reward for e in experiences if e is not None]

@@ -39,32 +39,24 @@ class Node:
     4. reward
     """
 
-    def __init__(self, state, actionAvail):
+    def __init__(self, currentDepth, contextM=None, parent=None, parentAction=None):
         """
         This is the total env and going to be looping through trials.
+        parent is the current state initialized with empty children
         """
-        self.game = Game()
-
-        self.state = state  # row and column coordinates
-        self.actionAvail = actionAvail
-
-        # current = row: element, column: dim
-        self.current = None
+        self.parent = parent  # None for root
+        self.parentAction = parentAction  # None for root
+        self.contextM = contextM  # This is a map
+        self.currentDepth = currentDepth
 
         # N is both for (state) or (state, action) pairs.
-        self.N = defaultdict(int)
+        self.N = 0
 
         # Q is for (state, action) pairs only.
-        self.Q = defaultdict(int)
+        self.Q = 0
 
         # A state node has child nodes (state and action pairs))
         self.children = dict()
-
-        self.terminalAction = None
-
-    def addChild(self, children: dict) -> None:
-        for child in children:
-            self.children[child.action] = child
 
     @property
     def isFullyExpanded(self):
@@ -75,24 +67,7 @@ class Node:
         If never been sampled, roll out.
         Else, add the new state and select the random child
         """
-        return len(self.memory['s2']) > 0
-
-    def isTerminal(self):
-        """
-        Loop forever:
-        If never been sampled, roll out with state and random action.
-        Else, add the new state and select the random child
-        """
-        return np.sum(len(self.actionAvail)) == 0
-
-    def getReward(self):
-        global reward
-        if self.N == 0:
-            reward = 0 if self.N == 0 else -np.inf
-        elif self.terminalAction:
-            if self.terminalAction == self.prbAnswer:
-                rwd = 1
-            else:
-                rwd = 0
-            reward = self.leafVal[self.terminalAction] * rwd
-        return reward
+        if self.currentDepth == 0:  # depth 0 == root state
+            return np.sum(self.contextM[:, self.currentDepth]) == 3
+        else:
+            return np.sum(self.contextM[self.currentDepth, :]) == 4
