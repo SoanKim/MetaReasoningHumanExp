@@ -8,10 +8,9 @@ from createGame import *
 from collections import defaultdict
 
 """
-The first state is Root and Elements, which is by default.
-
+The first state is Root and Elements, which is expanded already by default.
 The first action to choose is among {same, error, different}.
-This is just arms without state. Just nodes.
+This is just bandit arms without states. Just nodes.
 
 Calculate UCB1 for each node (same, error, different).
 When neither of them was visited, choose a random one.
@@ -38,16 +37,23 @@ class Node:
     3. is_terminal
     4. reward
     """
+    # the first action of the elements
+    nodeID = 0
+    # Records the number of times states have been visited
+    visits = defaultdict(lambda: 0)
 
-    def __init__(self, currentDepth, contextM=None, parent=None, parentAction=None):
+    def __init__(self, element, parent=None, parentAction=None):
         """
+        It may be confusing, but the income of the class is parent.
         This is the total env and going to be looping through trials.
         parent is the current state initialized with empty children
         """
+
+        super().__init__()
         self.parent = parent  # None for root
         self.parentAction = parentAction  # None for root
-        self.contextM = contextM  # This is a map
-        self.currentDepth = currentDepth
+        self.element = element
+        self.nodeID = Node.nodeID  # There are 16 node IDs
 
         # N is both for (state) or (state, action) pairs.
         self.N = 0
@@ -56,7 +62,9 @@ class Node:
         self.Q = 0
 
         # A state node has child nodes (state and action pairs))
-        self.children = dict()
+        self.children = {}
+
+        Node.nodeID += 1
 
     @property
     def isFullyExpanded(self):
@@ -67,7 +75,12 @@ class Node:
         If never been sampled, roll out.
         Else, add the new state and select the random child
         """
-        if self.currentDepth == 0:  # depth 0 == root state
-            return np.sum(self.contextM[:, self.currentDepth]) == 3
+        if self.element == 0:  # depth 0 == root state.
+            return np.sum(self.navi[:, self.element]) == 3
         else:
-            return np.sum(self.contextM[self.currentDepth, :]) == 4
+            return np.sum(self.navi[self.element, :]) == 5
+
+    def addChild(self):
+        print("self.element", self.element)
+        self.children[self.nodeID] = self.legalMove(self.element)
+        return self.children[self.nodeID]

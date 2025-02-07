@@ -75,14 +75,14 @@ class Game:
         return self.contextM[self.prbIdx], self.cardAvail[self.prbIdx], self.answer[self.prbIdx], self.navi[self.prbIdx]
 
     def legalMove(self, element):
-        positions = np.argwhere(self.navi[self.prbIdx, element, 1:] == 0)
-        positionAvail = []
-        for p in positions:
-            for pp in p:
-                positionAvail.append(pp)
+        if element == 0:
+            positions = np.argwhere(self.navi[self.prbIdx, :, 0] == 0)
+        else:
+            positions = np.argwhere(self.navi[self.prbIdx, element, 1:] == 0)
+        positionAvail = positions.flatten()
         return positionAvail
 
-    def move(self, timeStep, action):
+    def move(self, element, action):
         """
         Let's do this way:
         All the nodes are spread after the root, so we don't mark it.
@@ -91,7 +91,7 @@ class Game:
         # track state depth s0: root -> s1: child > s2: leaf
         # depth = 0
         if not np.any(self.navi[self.prbIdx, :, :]):  # if any child was chosen on the root
-            self.navi[self.prbIdx, action, timeStep] = 1
+            self.navi[self.prbIdx, action, element] = 1
         # if depth > 0
         else:
             element = np.argwhere(self.navi[self.prbIdx, :, 0] == 1).item()
@@ -104,7 +104,10 @@ class Game:
             nextState = [element, action]
             return nextState
 
-    def fullyExpanded(self, element):
+    def isTerminal(self, element):
+        """
+        To check if one node is fully expanded.
+        """
         return np.sum(self.navi[self.prbIdx, element, :]) == 5
 
     def getReward(self, element, finalChoice):

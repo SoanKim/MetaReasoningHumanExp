@@ -12,108 +12,138 @@ import random
 import math
 
 
-class MCTS:
+class MCTS(Node):
     """
+    The tree builds up the information.
+    Explore more promising nodes.
     This requires node and generates a tree.
     Select --> Expand --> Simulate --> Backup
+    s_{t+1} = (s_{t}, a_{t+1})
+    intRwd(intermediate reward) is different from external reward
     """
-    def __init__(self, state, exploration_constant=2):  # game is the problem with index
-        self.exploration_constant = exploration_constant
-        self.node = deepcopy(state)
+
+    def __init__(self, navi):  # game = an indexed problem
+        super().__init__(navi)
+        self.explorConstant = 2
 
     def UCB(self, child):
         """
-        Tree policy:
-        Calculate UCB of each child
+        MAB algorithm
+        Tree policy: Calculate UCB of each child
         """
         if child.N > 0:
             child.Q += child.V / child.N
-            ucb = child.Q + 2 * math.sqrt(math.log(self.parent.N) / child.N)
+            ucb = child.Q + self.explorConstant * math.sqrt(math.log(self.parent.N) / child.N)
         else:
             ucb = 0
         return ucb
 
+    def select(self):  # Should select from the navi position
+        """
+        Select the node that you want to explore (expand),
+        which is not fully expanded (all the actions available were explored).
 
-    # def select(self):  # Should select from the navi position
-    #     """
-    #     Tree traversal using either mere valueUCB1.
-    #     """
-    #     bestChild = []  # It can be plural
-    #     bestUCB = -np.inf
-    #
-    #     for child in self.node.children:
-    #         ucb = self.UCB(child)
-    #         if ucb > bestUCB:
-    #             bestChild.append(child)
-    #             bestUCB += ucb
-    #
-    #     # In case bestChild is plural
-    #     bestChild = random.choice(bestChild)
-    #     return bestChild
+        LATER, update it based on probabilities!
+        """
+        if not self.isFullyExpanded:
+            return self
+        else:
+            children = list(self.children.keys())  # element as an argument?
+
+            bestChildren = []  # It can be plural
+            bestUCB = -np.inf
+
+            for child in children:
+                ucb = self.UCB(child)
+                if ucb > bestUCB:
+                    bestChildren.append(child)
+                    bestUCB += ucb
+
+        # In case bestChild is plural
+        bestChild = np.argmax(bestChildren)
+        return bestChild
 
     def expand(self):
-        action =
-        while len(self.node.children()) > 0:
-            action = self.select()
-            action = self.select()
-            nextState = parent.t, action
-
-            if value is None:
-                # EXPAND
-                value = self.node.move(parent.t, nextState)
-
-            self.backup(self.searchPath, value)
-
-    #     for state in states:
-    #         if str(state.position) not in node.children:
-    #             new_node = Node(state, node)
-    #             node.children[str(state.position)] = new_node
-    #
-    #             if len(states) == len(node.children):
-    #                 node.is_fully_expanded = True
-    #
-    #             return new_node
-    #     # debugging
-    #     print('Should not get here!!!')
-    #
-    # def expand(self):
-    #     navi = Node().move(self.prbIdx, self.current[0], self.current[1])
-    #     actions = self.actionAvail[self.prbIdx][self.current[0]][self.current[1]]
-    #     nextState = self.action_func(self.state, self.actionAvail)
-    #     """s_{t+1} = (s_{t}, a_{t+1})"""
-    #     childNode = Node(nextState)
-    #     self.children.append(childNode)
-    #     return self.children if len(self.children) != 0 else None
-
-    def rollout(self, table):
         """
-        random simulation
+        Choosing an action available and append it to the tree.
+
+        LATER, update it based on probabilities!
         """
-        while not Game.isTerminal:
-            try:
-                table = random.choice(table.generateStates())
+        if not np.any(np.sum(self.navi[self.element], axis=0)) == 5:
+            actions = self.legalMove(self.element)
+            action = random.choice(actions)
 
-            except:
-                return 0
+            self.children[action] = []
+            return self.navi[self.element, action]
+        return self
 
-    def backprop(self, node, score):
-        while node is not None:
-            node.visits += 1
-            node.score += score
-            node = node.parent
+    def simulate(self):
+        """
+        MC simulation to the terminal state.
+        Can be either heuristic or random.
+        Receives a reward.
+        Average out the reward.
+        Backprop the value up the node and up the tree.
+        """
+        cumRwd = 0
+        state = self.legalMove(self.element)  # doesn't change the original.
 
-    def get_best_move(self, node):
-        best_score = float('-inf')
-        best_moves = []
+        while not self.isTerminal:
+            action = random.choice(np.where(state[self.element] == 0))
+            nextState = self.move(self.element, action)
+            imRwd = self.contextM[self.element, action]
+            cumRwd += imRwd
+            state = nextState
+        return cumRwd
 
-        for child_node in node.children.values():
-            move_score = child_node.score / child_node.score / child_node.visits + self.exploration_constant
+    def backprop(self, reward):
+        """ Updates reward and visit counts, propagating up the tree. """
+        # Increment the number of visits
+        self.visits += 1
 
-            if move_score > best_score:
-                best_score = move_score
-                best_moves = [child_node]
+        # Calculate the new average reward
+        self.Q += (reward - self.Q) / self.N
 
-            elif move_score == best_score:
-                best_moves.append(child_node)
+        # Propagate reward to the parent
+        if self.parent:
+            self.parent.backprop(reward)
 
-        return random.choice(best_moves)
+
+    # Tim Miller
+        # selectedNode = self.select()  # row: element and col: action
+        # selectedNodeAction = selectedNode.action
+        # interRwd = self.simulate()
+        # selectedNode.N[selectedNode] = selectedNode.N[selectedNode] + 1
+        # selectedNode.Q[selectedNode, selectedNodeAction] = selectedNode.Q[selectedNode, selectedNodeAction] + interRwd
+
+        # if self.elemState == 0:
+        #     q_value = self.qTable[selectedNodeAction, self.elemState]
+        #     delta = (1 / (self.N[selectedNode, selectedNodeAction])) * (interRwd - self.getValue())
+        # self.qfunction.update(self.state, selectedNodeAction, delta)
+        #
+        # if self.parent != None:
+        #     self.parent.back_propagate(self.reward + interRwd, self)
+
+    #""" Simulate the outcome of an action, and return the child node """
+
+    # MODEL-BASED
+    # def get_outcome_child(self, action):
+    #     # Choose one outcome based on transition probabilities
+    #     (next_state, reward, done) = self.mdp.execute(self.state, action)
+    #
+    #     # Find the corresponding state and return if this already exists
+    #     for (child, _) in self.children[action]:
+    #         if next_state == child.state:
+    #             return child
+    #
+    #     # This outcome has not occured from this state-action pair previously
+    #     new_child = SingleAgentNode(
+    #         self.mdp, self, next_state, self.qfunction, self.bandit, reward, action
+    #     )
+    #
+    #     # Find the probability of this outcome (only possible for model-based) for visualising tree
+    #     probability = 0.0
+    #     for (outcome, probability) in self.mdp.get_transitions(self.state, action):
+    #         if outcome == next_state:
+    #             self.children[action] += [(new_child, probability)]
+    #             return new_child

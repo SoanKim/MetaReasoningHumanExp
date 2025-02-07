@@ -6,6 +6,7 @@
 
 from humanData import *
 from createGame import Game
+from createNode import Node
 import random
 import matplotlib.pyplot as plt
 
@@ -14,42 +15,43 @@ import matplotlib.pyplot as plt
 # from createNode import Node
 
 data = df1Subj1
+scores = []
 
-scoreForEveryone = np.zeros((10, 89))
+for prb_i in range(1):
+    score = 0
+    game = Game(prb_i)
 
-for participants in range(10):
-    totalScore = []
-    print("participant: {}".format(participants))
-    for prb_i in range(89):
-        game = Game(prb_i)
-        contextM, cardAvail, answer, navi = game.prbInit()
+    # initialize game
+    contextM, cardAvail, answer, navi = game.prbInit()
 
-        element = 0
-        for timeStep in range(5):
-            if timeStep == 0:
-                element += random.choice(range(3))
-                game.move(timeStep, element)
-            else:
-                legalMoves = game.legalMove(element)
-                action = random.choice(legalMoves)
-                nextState = game.move(timeStep, action)
-
-        dimChoice = random.choice(range(4))
-        candidates = cardAvail[element][dimChoice]
-        if not candidates:
-            finalAnswer = 0
-        else:
-            finalAnswer = random.choice(candidates)
-        if finalAnswer == answer:
-            totalScore.append(1)
-        else:
-            totalScore.append(0)
-
-        scoreForEveryone[participants, prb_i] = np.mean(totalScore)
+    element = 0
+    root = Node(navi)
+    children = root.addChild()
+    print(children)
 
 
-plt.plot(np.mean(scoreForEveryone, axis=0))
-plt.show()
-# plt.title("random problem solving")
-# plt.plot(list(range(89)), scoreForPlotting)
+    #     if timeStep == 0: --> replace it with nodeid
+    #         element += random.choice(range(3))
+    #         game.move(nodeID, element)
+    #     else:
+    #         legalMoves = game.legalMove(element)
+    #         action = random.choice(legalMoves)
+    #         nextState = game.move(nodeID, action)
+    #
+    # dimChoice = random.choice(range(4))
+    # candidates = cardAvail[element][dimChoice]
+    # if not candidates:
+    #     finalAnswer = 0
+    # else:
+    #     finalAnswer = random.choice(candidates)
+    # if finalAnswer == answer:
+    #     score += 1
+    # else:
+    #     score += 0
+    #
+    # scores.append(np.round(score/(prb_i+1), 2))
+
+# plt.plot(np.arange(len(scores)), scores)
+# plt.ylim([0, 1])
 # plt.show()
+# print(scores)
