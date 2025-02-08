@@ -20,11 +20,17 @@ class MCTS(Node):
     Select --> Expand --> Simulate --> Backup
     s_{t+1} = (s_{t}, a_{t+1})
     intRwd(intermediate reward) is different from external reward
+
+    **to do**: to make function for calculating element according to the prob.
     """
 
-    def __init__(self, navi):  # game = an indexed problem
-        super().__init__(navi)
+    def __init__(self, prbIdx):  # game = an indexed problem
+        super().__init__(prbIdx)
         self.explorConstant = 2
+        self.game = Game(prbIdx)
+        # initialize game
+        self.contextM, self.cardAvail, self.answer, self.navi = self.game.prbInit()
+        self.root = Node(self.navi)
 
     def UCB(self, child):
         """
@@ -45,39 +51,39 @@ class MCTS(Node):
 
         LATER, update it based on probabilities!
         """
-        if not self.isFullyExpanded:
-            return self
-        else:
-            children = list(self.children.keys())  # element as an argument?
+        # if not self.isFullyExpanded:
+        #     return self
+        # else:
+        children = list(self.children[Node.timeStep].values())  # element as an argument?
 
-            bestChildren = []  # It can be plural
-            bestUCB = -np.inf
+        bestChildren = []  # It can be plural
+        bestUCB = -np.inf
 
-            for child in children:
-                ucb = self.UCB(child)
-                if ucb > bestUCB:
-                    bestChildren.append(child)
-                    bestUCB += ucb
+        for child in children:
+            ucb = self.UCB(child)
+            if ucb > bestUCB:
+                bestChildren.append(child)
+                bestUCB += ucb
 
         # In case bestChild is plural
         bestChild = np.argmax(bestChildren)
         return bestChild
 
-    def expand(self):
+    def expand(self, depth, element):
         """
         Choosing an action available and append it to the tree.
 
         LATER, update it based on probabilities!
         """
-        if not np.any(np.sum(self.navi[self.element], axis=0)) == 5:
-            actions = self.legalMove(self.element)
+        if not np.any(np.sum(self.navi[element], axis=0)) == 5:
+            actions = self.legalMove(depth, element)
             action = random.choice(actions)
 
             self.children[action] = []
-            return self.navi[self.element, action]
+            return self.navi[element, action]
         return self
 
-    def simulate(self):
+    def simulate(self, element):
         """
         MC simulation to the terminal state.
         Can be either heuristic or random.
@@ -86,14 +92,13 @@ class MCTS(Node):
         Backprop the value up the node and up the tree.
         """
         cumRwd = 0
-        state = self.legalMove(self.element)  # doesn't change the original.
+        state = self.legalMove(self.depth, element)  # doesn't change the original.
 
-        while not self.isTerminal:
-            action = random.choice(np.where(state[self.element] == 0))
-            nextState = self.move(self.element, action)
-            imRwd = self.contextM[self.element, action]
-            cumRwd += imRwd
-            state = nextState
+        # while not self.isTerminal:
+        action = random.choice(np.where(state[element] == 0))
+        imRwd = self.contextM[self.depth, element, action]
+        cumRwd += imRwd
+
         return cumRwd
 
     def backprop(self, reward):

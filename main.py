@@ -5,6 +5,7 @@
 # Explanation: (Enter explanation here)
 
 from humanData import *
+from createMCTS import MCTS
 from createGame import Game
 from createNode import Node
 import random
@@ -17,20 +18,40 @@ import matplotlib.pyplot as plt
 data = df1Subj1
 scores = []
 
+
 for prb_i in range(1):
     score = 0
     game = Game(prb_i)
+    mcts = MCTS(prb_i)
 
     # initialize game
     contextM, cardAvail, answer, navi = game.prbInit()
-
-    element = 0
     root = Node(navi)
-    children = root.addChild()
-    print(children)
+    element = random.choice(np.arange(3))
+    for search in range(5):
+        node = root
+        timeStep = node.timeStep
+
+        actions = []  # to keep track of element, the first action
+        while node.isFullyExpanded(element):
+            actionAvail = game.legalMove(timeStep, element)
+            # Correct it later
+            action = random.choice(actionAvail)
+            actions.append(action)
+
+        isTerminal = game.isTerminal(element)
+        finalActionAvail = cardAvail[actions[0] * actions[-1]]
+
+        if not isTerminal:
+            node = mcts.expand(node.depth, element)
+            value = mcts.simulate(element)
+            node.backprop(reward=value)
+            node.depthUpdate(element)
+
+            node.children[timeStep].append(game.legalMove(timeStep, element))
 
 
-    #     if timeStep == 0: --> replace it with nodeid
+#     if timeStep == 0: --> replace it with nodeid
     #         element += random.choice(range(3))
     #         game.move(nodeID, element)
     #     else:

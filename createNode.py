@@ -25,7 +25,7 @@ After all nodes are already visited, chose the best child of the highest UCB and
 """
 
 
-class Node:
+class Node(Game):
     """
     A representation of a single board state.
     This class receives "states," "actions," "answer" and change "states" and "actions" into nodes.
@@ -38,11 +38,15 @@ class Node:
     4. reward
     """
     # the first action of the elements
-    nodeID = 0
+    timeStep = 0
+
+    # depth
+    depth = 0
+
     # Records the number of times states have been visited
     visits = defaultdict(lambda: 0)
 
-    def __init__(self, element, parent=None, parentAction=None):
+    def __init__(self, parent=None, parentAction=None):
         """
         It may be confusing, but the income of the class is parent.
         This is the total env and going to be looping through trials.
@@ -52,8 +56,8 @@ class Node:
         super().__init__()
         self.parent = parent  # None for root
         self.parentAction = parentAction  # None for root
-        self.element = element
-        self.nodeID = Node.nodeID  # There are 16 node IDs
+        self.depth = Node.depth
+        self.timeStep = Node.timeStep  # There are 16 node IDs
 
         # N is both for (state) or (state, action) pairs.
         self.N = 0
@@ -64,10 +68,9 @@ class Node:
         # A state node has child nodes (state and action pairs))
         self.children = {}
 
-        Node.nodeID += 1
+        Node.timeStep += 1
 
-    @property
-    def isFullyExpanded(self):
+    def isFullyExpanded(self, element):
         """
         Check if this is a leaf node.
         If not a leaf node,
@@ -75,12 +78,18 @@ class Node:
         If never been sampled, roll out.
         Else, add the new state and select the random child
         """
-        if self.element == 0:  # depth 0 == root state.
-            return np.sum(self.navi[:, self.element]) == 3
+        if self.timeStep == 0:  # depth 0 == root state.
+            return np.sum(self.navi[:, element]) == 3
         else:
-            return np.sum(self.navi[self.element, :]) == 5
+            return np.sum(self.navi[element, :]) == 5
 
-    def addChild(self):
-        print("self.element", self.element)
-        self.children[self.nodeID] = self.legalMove(self.element)
-        return self.children[self.nodeID]
+    def addChild(self, element):
+        self.children[self.timeStep] = self.legalMove(depth=self.timeStep, element=element)
+        return self.children[self.timeStep]
+
+    def depthUpdate(self, element):
+        if np.sum(self.navi[:, 0]) > 3 and np.sum(self.navi[element, :]) < 5:
+            Node.depth += 1
+        if np.sum(self.navi[:, 0]) > 3 and np.sum(self.navi[element, :]) == 5:
+            Node.depth += 1
+        return self.depth

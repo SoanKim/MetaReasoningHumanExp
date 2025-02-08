@@ -9,7 +9,7 @@ from collections import deque, namedtuple
 
 class replayBuffer:
     """Fixed-size buffer to store experience tuples."""
-    def __init__(self, action_size, stateIdx=None, buffer_size=90):
+    def __init__(self, action_size=15, stateIdx=None, buffer_size=90):
         self.action_size = action_size  # It can vary depending on the depth of the tree.
         self.memory = deque(maxlen=buffer_size)
         self.experience = namedtuple(

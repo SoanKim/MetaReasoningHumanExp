@@ -7,7 +7,10 @@
 from humanData import *
 from experience import replayBuffer
 
-
+"""
+nodeID --> 0 ... 15
+Qtable --> 0 ... 15
+"""
 class Game:
     """
     This class receives true stimuli from human data and prepares it to calculate leaf values.
@@ -74,15 +77,15 @@ class Game:
         # contextM, candidates from leaf nodes, answer
         return self.contextM[self.prbIdx], self.cardAvail[self.prbIdx], self.answer[self.prbIdx], self.navi[self.prbIdx]
 
-    def legalMove(self, element):
-        if element == 0:
+    def legalMove(self, depth, element):
+        if depth == 0:
             positions = np.argwhere(self.navi[self.prbIdx, :, 0] == 0)
         else:
             positions = np.argwhere(self.navi[self.prbIdx, element, 1:] == 0)
         positionAvail = positions.flatten()
         return positionAvail
 
-    def move(self, element, action):
+    def move(self, depth, element, action):
         """
         Let's do this way:
         All the nodes are spread after the root, so we don't mark it.
@@ -94,8 +97,8 @@ class Game:
             self.navi[self.prbIdx, action, element] = 1
         # if depth > 0
         else:
-            element = np.argwhere(self.navi[self.prbIdx, :, 0] == 1).item()
-            positionAvail = self.legalMove(element)
+            empty = np.argwhere(self.navi[self.prbIdx, :, 0] == 1).item()
+            positionAvail = self.legalMove(depth, empty)
             if action in positionAvail:
                 if np.sum(self.navi[self.prbIdx, element, :]) < 5:
                     self.navi[self.prbIdx, element, action + 1] = 1
