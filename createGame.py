@@ -11,10 +11,13 @@ from experience import replayBuffer
 nodeID --> 0 ... 15
 Qtable --> 0 ... 15
 """
+
+
 class Game:
     """
     This class receives true stimuli from human data and prepares it to calculate leaf values.
     """
+
     def __init__(self, prbIdx=None):
         df = df1Subj1
         self.prbIdx = prbIdx if prbIdx else 0
@@ -83,6 +86,7 @@ class Game:
         else:
             positions = np.argwhere(self.navi[self.prbIdx, element, 1:] == 0)
         positionAvail = positions.flatten()
+        print("positionAvail", positionAvail)
         return positionAvail
 
     def move(self, depth, element, action):
@@ -120,3 +124,9 @@ class Game:
             rwd = 0
         reward = self.leafVal[self.prbIdx, element, finalChoice] * rwd
         return reward
+
+
+if __name__ == "__main__":
+    game = Game(prbIdx=0)
+    actions = game.legalMove(0, 2)
+    print(actions)

@@ -28,27 +28,26 @@ for prb_i in range(1):
     contextM, cardAvail, answer, navi = game.prbInit()
     root = Node(navi)
     element = random.choice(np.arange(3))
-    for search in range(5):
-        node = root
-        timeStep = node.timeStep
-
+    print("element", element)
+    for timeStep in range(5):
+        depth = root.depthUpdate(element, navi)
+        print("depth", depth)
         actions = []  # to keep track of element, the first action
-        while node.isFullyExpanded(element):
-            actionAvail = game.legalMove(timeStep, element)
-            # Correct it later
+        if not root.isFullyExpanded(element, navi, timeStep):
+            actionAvail = game.legalMove(depth, element)
             action = random.choice(actionAvail)
             actions.append(action)
-
-        isTerminal = game.isTerminal(element)
-        finalActionAvail = cardAvail[actions[0] * actions[-1]]
-
-        if not isTerminal:
-            node = mcts.expand(node.depth, element)
-            value = mcts.simulate(element)
-            node.backprop(reward=value)
-            node.depthUpdate(element)
-
-            node.children[timeStep].append(game.legalMove(timeStep, element))
+        print(actions)
+        # isTerminal = game.isTerminal(element)
+        # finalActionAvail = cardAvail[actions[0] * actions[-1]]
+        #
+        # if not isTerminal:
+        #     node = mcts.expand(node.depth, element)
+        #     value = mcts.simulate(element)
+        #     node.backprop(reward=value)
+        #     node.depthUpdate(element)
+        #
+        #     node.children[timeStep].append(game.legalMove(timeStep, element))
 
 
 #     if timeStep == 0: --> replace it with nodeid
