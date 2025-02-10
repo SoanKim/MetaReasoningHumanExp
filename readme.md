@@ -19,7 +19,7 @@ self.actions (3*5)
 | 2 | 0 | 1 | 2 | 3 |
 
 np.argwhere (self.navi)
-| Root|Color| Fill|Shape| Back|
+| Root|Color| Fill|Shape| Back| 
 |-----|-----|-----|-----|-----|
 | 0 0 | 0 1 | 0 2 | 0 3 | 0 4 |
 | 1 0 | 1 1 | 1 2 | 1 3 | 1 4 |

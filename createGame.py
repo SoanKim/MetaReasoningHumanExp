@@ -5,11 +5,10 @@
 # Explanation: (Enter explanation here)
 
 from humanData import *
-from experience import replayBuffer
 
 """
-nodeID --> 0 ... 15
-Qtable --> 0 ... 15
+nodeID --> 0 ... 17
+Qtable --> 0 ... 17
 """
 
 
@@ -25,7 +24,7 @@ class Game:
         self.stim = self.env[0]
         self.answer = self.env[1]
         self.leafLen = np.zeros((len(df), 3, 4))
-        self.leafVal = np.zeros((len(df), 3, 4))
+
         self.contextM = np.zeros((len(df), 3, 5))
         self.navi = np.zeros_like(self.contextM)
 
@@ -38,6 +37,9 @@ class Game:
 
         # navigation: row: elements, columns: dimensions
         self.combi = [list(i) for i in itertools.combinations(list(range(5)), r=3)]
+
+        # reward
+        self.terminalState = np.zeros((len(df), 12))
 
     def prbInit(self):
         """
@@ -52,9 +54,9 @@ class Game:
         [24.  6.  6.  6.  6.]
         [ 9.  0.  3.  3.  3.]]
         """
-        for prb_i, stim in enumerate(self.stim):
+        for prbIdx, stim in enumerate(self.stim):
             dimStim = list(zip(*stim))
-            dims = []
+            dims = []  # correct
             prbCand = [[], [], []]
             for dim in range(4):
                 three = dimStim[dim]
@@ -63,70 +65,74 @@ class Game:
                     vals = [three[cc] for cc in c]
                     lenVal = len(set(vals)) - 1
                     elemCand[lenVal].append(combi_i)
-                    # self.prbM[prb_i, combi_i, lenVal, dim] = 1
+
                 dims.append(elemCand)
                 for elem in range(3):
                     prbCand[elem].append(elemCand[elem])
-            self.cardAvail.append(prbCand)
+            self.cardAvail.append(prbCand)  # correct
 
+            # coding if answer is in the leaf
+            temp = np.array([])
+            ans = self.answer[prbIdx]
+            for cards in self.cardAvail[prbIdx]:
+                for elem in cards:  # list
+                    if ans in elem:
+                        temp = np.append(temp, 1)
+                    else:
+                        temp = np.append(temp, 0)
+
+            self.terminalState[prbIdx] = temp
+
+            # CHECK FROM HERE
             for dim in range(4):
                 for elem in range(3):
-                    self.leafVal[prb_i, elem, dim] = 0 if len(dims[dim][elem]) == 0 else np.round(
-                        1 / len(dims[dim][elem]), 2)
-                    self.leafLen[prb_i, elem, dim] = len(dims[dim][elem])
-                    self.contextM[prb_i, :, 0] = np.sum(self.leafLen[prb_i], axis=1)
-                    self.contextM[prb_i, :, 1:] = self.leafLen[prb_i]
+                    self.leafLen[prbIdx, elem, dim] = len(dims[dim][elem])
+                    self.contextM[prbIdx, :, 0] = np.sum(self.leafLen[prbIdx], axis=1)
+                    self.contextM[prbIdx, :, 1:] = self.leafLen[prbIdx]
 
-        # contextM, candidates from leaf nodes, answer
-        return self.contextM[self.prbIdx], self.cardAvail[self.prbIdx], self.answer[self.prbIdx], self.navi[self.prbIdx]
+        return (self.contextM[self.prbIdx], self.cardAvail[self.prbIdx], self.answer[self.prbIdx],
+                self.navi[self.prbIdx], self.terminalState[self.prbIdx])
 
-    def legalMove(self, depth, element):
-        if depth == 0:
+    def legalMove(self, element=None):
+        if not element:
             positions = np.argwhere(self.navi[self.prbIdx, :, 0] == 0)
         else:
-            positions = np.argwhere(self.navi[self.prbIdx, element, 1:] == 0)
+            positions = np.argwhere(self.navi[self.prbIdx, element, :] == 0)
         positionAvail = positions.flatten()
-        print("positionAvail", positionAvail)
         return positionAvail
 
-    def move(self, depth, element, action):
-        """
-        Let's do this way:
-        All the nodes are spread after the root, so we don't mark it.
-        First action is the choice to expand the child!
-        """
+    def move(self, depth, element, action=None):
+        positionAvail = self.legalMove(element)
         # track state depth s0: root -> s1: child > s2: leaf
-        # depth = 0
-        if not np.any(self.navi[self.prbIdx, :, :]):  # if any child was chosen on the root
+        if depth == 0:  # if any child was chosen on the root
             self.navi[self.prbIdx, action, element] = 1
         # if depth > 0
         else:
-            empty = np.argwhere(self.navi[self.prbIdx, :, 0] == 1).item()
-            positionAvail = self.legalMove(depth, empty)
             if action in positionAvail:
                 if np.sum(self.navi[self.prbIdx, element, :]) < 5:
                     self.navi[self.prbIdx, element, action + 1] = 1
             else:
                 raise ValueError("Illegal move!")
-            nextState = [element, action]
-            return nextState
 
-    def isTerminal(self, element):
+    def isTerminal(self,):
         """
         To check if one node is fully expanded.
         """
-        return np.sum(self.navi[self.prbIdx, element, :]) == 5
+        return np.sum(self.navi[self.prbIdx]) == 15
 
     def getReward(self, element, finalChoice):
         if finalChoice == self.answer[self.prbIdx]:
             rwd = 1
         else:
             rwd = 0
-        reward = self.leafVal[self.prbIdx, element, finalChoice] * rwd
+        reward = self.leafLen[self.prbIdx, element, finalChoice] * rwd
         return reward
 
 
-if __name__ == "__main__":
-    game = Game(prbIdx=0)
-    actions = game.legalMove(0, 2)
-    print(actions)
+# if __name__ == "__main__":
+#     game = Game(prbIdx=0)
+#     contextM, cardAvail, answer, navi, terminalVal = game.prbInit()
+
+
+
+

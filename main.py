@@ -19,25 +19,39 @@ data = df1Subj1
 scores = []
 
 
-for prb_i in range(1):
+for prbIdx in range(1):
+
     score = 0
-    game = Game(prb_i)
-    mcts = MCTS(prb_i)
 
     # initialize game
-    contextM, cardAvail, answer, navi = game.prbInit()
-    root = Node(navi)
-    element = random.choice(np.arange(3))
-    print("element", element)
-    for timeStep in range(5):
-        depth = root.depthUpdate(element, navi)
-        print("depth", depth)
-        actions = []  # to keep track of element, the first action
-        if not root.isFullyExpanded(element, navi, timeStep):
-            actionAvail = game.legalMove(depth, element)
-            action = random.choice(actionAvail)
-            actions.append(action)
-        print(actions)
+    mcts = MCTS(prbIdx)
+    mcts.expand()
+
+
+    # make root
+
+
+
+
+    # element = random.choice(np.arange(3))
+    # depth = ro
+    # actionAvail = game.legalMove(depth, element)
+    # print(actionAvail)
+
+    # print("element", element)
+    # depth = root.depth
+    # for timeStep in range(5):
+    #     actions = []  # to keep track of element, the first action
+    #     if not root.isFullyExpanded(element, navi, timeStep):
+    #         actionAvail = game.legalMove(depth, element)
+    #         action = random.choice(actionAvail)
+    #         nextState = game.move(depth=depth, element=element, action=action)
+    #         depth = root.depth
+    #         print(depth)
+    #         actionAvail = game.legalMove(depth, element)
+    #         print("actionAvail", actionAvail)
+
+
         # isTerminal = game.isTerminal(element)
         # finalActionAvail = cardAvail[actions[0] * actions[-1]]
         #
@@ -69,7 +83,7 @@ for prb_i in range(1):
     # else:
     #     score += 0
     #
-    # scores.append(np.round(score/(prb_i+1), 2))
+    # scores.append(np.round(score/(prbIdx+1), 2))
 
 # plt.plot(np.arange(len(scores)), scores)
 # plt.ylim([0, 1])

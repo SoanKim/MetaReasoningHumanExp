@@ -5,7 +5,6 @@
 # Explanation: (Enter explanation here)
 
 from createGame import *
-from collections import defaultdict
 
 """
 The first state is Root and Elements, which is expanded already by default.
@@ -23,7 +22,7 @@ And also update the V and Q of the root node.
 
 After all nodes are already visited, chose the best child of the highest UCB and expand.
 """
-
+from collections import defaultdict
 
 class Node:
     """
@@ -38,33 +37,53 @@ class Node:
     4. reward
     """
 
-    # depth
-    depth = 0
-
-    # Records the number of times states have been visited
-    visits = defaultdict(lambda: 0)
-
     def __init__(self, parent=None, parentAction=None):
         """
         It may be confusing, but the income of the class is parent.
         This is the total env and going to be looping through trials.
         parent is the current state initialized with empty children
         """
-
         self.parent = parent  # None for root
         self.parentAction = parentAction  # None for root
-        self.depth = Node.depth  # 0 for root state.
+        # matrix coordinates before depth 2, from 2 onwards, cardCandidates
+
+        # state is numAvailActions
+        #self.state = np.zeros((1, 3)) if state is None else state
 
         # N is both for (state) or (state, action) pairs.
         self.N = 0
 
         # Q is for (state, action) pairs only.
-        self.Q = 0
+        self.Q = -np.inf
 
-        # A state node has child nodes (state and action pairs))
-        self.children = {}
+        # a state node has child nodes (state and action pairs))
+        self.children = defaultdict(int)
 
-    def isFullyExpanded(self, element, navi, timeStep):
+        # update depth.
+        self.depth = 0
+
+        """
+        |---|---|---|---|---|
+        | 0 | 0 | 1 | 2 | 3 |
+        | 1 | 0 | 1 | 2 | 3 |
+        | 2 | 0 | 1 | 2 | 3 |
+        |---|---|---|---|---|
+        sum(1st col) < 3: depth 0
+        sum(1st col) == 3: depth 1
+        sum(2nd-4th cols) < 12: depth 1
+        sum(2nd-4th cols) == 12: depth 2
+        
+        before selecting a leaf val: depth 2
+        after selecting a leaf val: depth 3
+        after receiving reward = terminal
+        
+        """
+    def addChild(self, action, depth, ucb):
+        self.children['action'].append(action)
+        self.children['depth'].append(depth)
+        self.children['ucb'].append(ucb)
+
+    def trackDepth(self, navi):
         """
         Check if this is a leaf node.
         If not a leaf node,
@@ -72,18 +91,26 @@ class Node:
         If never been sampled, roll out.
         Else, add the new state and select the random child
         """
-        if timeStep == 0:  # depth 0 == root state.
-            return np.sum(navi[:, element]) == 3
-        else:
-            return np.sum(navi[element, :]) == 5
-
-    def addChild(self, element, legalMove, timeStep):
-        self.children[timeStep] = legalMove(depth=timeStep, element=element)
-        return self.children[timeStep]
-
-    def depthUpdate(self, element, navi):
-        if np.sum(navi[:, 0]) > 3 and np.sum(navi[element, :]) < 5:
-            Node.depth += 1
-        if np.sum(navi[:, 0]) > 3 and np.sum(navi[element, :]) == 5:
-            Node.depth += 1
+        if np.sum(navi[:, 0]) < 3:
+            self.depth = 0
+        elif np.sum(navi[:, 0]) == 3 and np.sum(navi[:, 1:]) < 12:
+            self.depth = 1
+        elif np.sum(navi[:, 0]) == 3 and np.sum(navi[:, 1:]) == 12:
+            self.depth = 2
         return self.depth
+
+    def isFullyExpanded(self, navi):
+        if self.depth == 0:
+            return np.sum(navi[:, 0]) == 3
+        elif self.depth == 1:
+            return np.sum(navi[:, 1:]) == 12
+        elif self.depth == 2:
+            return True
+
+
+# if __name__ == '__main__':
+#
+#     game = Game()
+#     contextM, cardAvail, answer, navi, leafState = game.prbInit()
+#     root = Node()
+#     print(root.parent)

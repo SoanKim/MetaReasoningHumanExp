@@ -12,122 +12,133 @@ import random
 import math
 
 
-class MCTS(Node):
-    """
-    The tree builds up the information.
-    Explore more promising nodes.
-    This requires node and generates a tree.
-    Select --> Expand --> Simulate --> Backup
-    s_{t+1} = (s_{t}, a_{t+1})
-    intRwd(intermediate reward) is different from external reward
-
-    **to do**: to make function for calculating element according to the prob.
-    """
+class MCTS:
 
     def __init__(self, prbIdx):  # game = an indexed problem
-        super().__init__(prbIdx)
         self.explorConstant = 2
-        self.game = Game(prbIdx)
-        # initialize game
-        self.contextM, self.cardAvail, self.answer, self.navi = self.game.prbInit()
-        self.root = Node(self.navi)
+        self.prbIdx = prbIdx
+        self.game = Game(self.prbIdx)
+        self.contextM, self.cardAvail, self.answer, self.navi, self.leafState = self.game.prbInit()
+        self.root = Node()
+        self.depth = self.root.trackDepth(self.navi)
+        self.fullExpand = self.root.isFullyExpanded(self.navi)
+        self.legalMoves = self.game.legalMove()
 
-    def UCB(self, child):
+    def traverse(self, rollOutPolicy=None):
+        if rollOutPolicy is None:
+            tempEnv = deepcopy(self.navi)
+            positions = []
+            values = []
+            while np.sum(tempEnv[:, 0]) < 3:
+                # row = actions in depth 1
+                rowCandi = np.argwhere(tempEnv[:, 0] == 0).flatten()
+                row = random.choice(rowCandi)
+
+                # col = actions in depth 2
+                colCandi = np.argwhere(tempEnv[row, :] == 0).flatten()
+                colCandi = [c for c in colCandi]
+                col = random.choice(colCandi)
+
+                # mark elem choice
+                self.navi[row, 0] = 1
+
+                # rollout info is volatile
+                tempEnv[row, 0] = 1
+                tempEnv[row, col] = 1
+                positions.append((row, col))
+
+                # value of those actions
+                val = self.contextM[row, col]
+                if val != 0:
+                    values.append(np.round(1/val, 2))
+                else:
+                    values.append(0)
+            valueIdx = values.index(max(values))
+            bestElem = positions[valueIdx][0]  # row
+
+            # update children
+            for i, (row, col) in enumerate(positions):
+                self.root.children[row] = values[i]
+
+            return bestElem
+
+    def expand(self, treePolicy=None):
+        self.depth += 1
+
+        bestElem = self.traverse()
+        print("bestElem", bestElem)
+        tempEnv = deepcopy(self.navi)
+        if treePolicy is None:
+            while np.sum(tempEnv[bestElem, :]) < 5:
+                action = random.choice(np.argwhere(tempEnv[bestElem, :] == 0).flatten())
+                tempEnv[bestElem, action] = 1
+                finalAction = bestElem * 4 + action
+                print("finalAction", finalAction)
+                val = self.simulate(finalAction)
+                print("val", val)
+
+    def simulate(self, finalAction):
         """
-        MAB algorithm
-        Tree policy: Calculate UCB of each child
+        returns a leaf value with the number of the cards (not considering external rewards)
         """
-        if child.N > 0:
-            child.Q += child.V / child.N
-            ucb = child.Q + self.explorConstant * math.sqrt(math.log(self.parent.N) / child.N)
+        # convert the action into a leaf index
+
+        targetLeafVal = self.game.leafLen[self.prbIdx].flatten()
+        if targetLeafVal[finalAction]:
+            val = 1 / targetLeafVal[finalAction]
+        else:
+            val = 0
+        return val
+
+    def backprop(self, node, val):
+        """ Updates reward and visit counts, propagating up the tree. """
+        if node.parent is None:
+            # increment the visit of the current node's
+            node.N += 1
+            # increment the value of current node's
+            node.Q = self.UCB(node, val)
+            # Calculate the new average reward
+            node.Q += self.UCB(node, val)
+
+        else:
+            # increment the visit of the parent's
+            node.parent.N += 1
+            node.parent.Q += np.sum(node.Q) / node.parent.N
+            # increment the visit of the current node's
+            node.N += 1
+            # increment the value of current node's
+            ucb = self.UCB(node, val)
+            # Calculate the new average reward
+            node.Q += ucb
+
+    def UCB(self, node, leafVal):
+        if not node.parent:
+            node.parent = self.root
+        else:
+            node.parent = node.parent
+
+        if node.N > 0:
+            ucb = leafVal + self.explorConstant * math.sqrt(math.log(node.parent.N) / node.N)
         else:
             ucb = 0
         return ucb
 
-    def select(self):  # Should select from the navi position
-        """
-        Select the node that you want to explore (expand),
-        which is not fully expanded (all the actions available were explored).
-
-        LATER, update it based on probabilities!
-        """
-        # if not self.isFullyExpanded:
-        #     return self
-        # else:
-        children = list(self.children[Node.timeStep].values())  # element as an argument?
-
-        bestChildren = []  # It can be plural
-        bestUCB = -np.inf
-
-        for child in children:
-            ucb = self.UCB(child)
-            if ucb > bestUCB:
-                bestChildren.append(child)
-                bestUCB += ucb
-
-        # In case bestChild is plural
-        bestChild = np.argmax(bestChildren)
-        return bestChild
-
-    def expand(self, depth, element):
-        """
-        Choosing an action available and append it to the tree.
-
-        LATER, update it based on probabilities!
-        """
-        if not np.any(np.sum(self.navi[element], axis=0)) == 5:
-            actions = self.legalMove(depth, element)
-            action = random.choice(actions)
-
-            self.children[action] = []
-            return self.navi[element, action]
-        return self
-
-    def simulate(self, element):
-        """
-        MC simulation to the terminal state.
-        Can be either heuristic or random.
-        Receives a reward.
-        Average out the reward.
-        Backprop the value up the node and up the tree.
-        """
-        cumRwd = 0
-        state = self.legalMove(self.depth, element)  # doesn't change the original.
-
-        # while not self.isTerminal:
-        action = random.choice(np.where(state[element] == 0))
-        imRwd = self.contextM[self.depth, element, action]
-        cumRwd += imRwd
-
-        return cumRwd
-
-    def backprop(self, reward):
-        """ Updates reward and visit counts, propagating up the tree. """
-        # Increment the number of visits
-        self.visits += 1
-
-        # Calculate the new average reward
-        self.Q += (reward - self.Q) / self.N
-
-        # Propagate reward to the parent
-        if self.parent:
-            self.parent.backprop(reward)
 
 
     # Tim Miller
-        # selectedNode = self.select()  # row: element and col: action
-        # selectedNodeAction = selectedNode.action
-        # interRwd = self.simulate()
-        # selectedNode.N[selectedNode] = selectedNode.N[selectedNode] + 1
-        # selectedNode.Q[selectedNode, selectedNodeAction] = selectedNode.Q[selectedNode, selectedNodeAction] + interRwd
+    # selectedNode = self.select()  # row: element and col: action
+    # selectedNodeAction = selectedNode.action
+    # interRwd = self.simulate()
+    # selectedNode.N[selectedNode] = selectedNode.N[selectedNode] + 1
+    # selectedNode.Q[selectedNode, selectedNodeAction] = selectedNode.Q[selectedNode, selectedNodeAction] + interRwd
 
-        # if self.elemState == 0:
-        #     q_value = self.qTable[selectedNodeAction, self.elemState]
-        #     delta = (1 / (self.N[selectedNode, selectedNodeAction])) * (interRwd - self.getValue())
-        # self.qfunction.update(self.state, selectedNodeAction, delta)
-        #
-        # if self.parent != None:
-        #     self.parent.back_propagate(self.reward + interRwd, self)
+    # if self.elemState == 0:
+    #     q_value = self.qTable[selectedNodeAction, self.elemState]
+    #     delta = (1 / (self.N[selectedNode, selectedNodeAction])) * (interRwd - self.getValue())
+    # self.qfunction.update(self.state, selectedNodeAction, delta)
+    #
+    # if self.parent != None:
+    #     self.parent.back_propagate(self.reward + interRwd, self)
 
     #""" Simulate the outcome of an action, and return the child node """
 
