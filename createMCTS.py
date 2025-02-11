@@ -7,6 +7,7 @@
 from createGame import *
 from createNode import Node
 from copy import deepcopy
+from collections import defaultdict
 import numpy as np
 import random
 import math
@@ -15,113 +16,44 @@ import math
 class MCTS:
 
     def __init__(self, prbIdx):  # game = an indexed problem
-        self.explorConstant = 2
+        self.exploreConstant = 2
+        # initialize game
         self.prbIdx = prbIdx
         self.game = Game(self.prbIdx)
         self.contextM, self.cardAvail, self.answer, self.navi, self.leafState = self.game.prbInit()
-        self.root = Node()
-        self.depth = self.root.trackDepth(self.navi)
-        self.fullExpand = self.root.isFullyExpanded(self.navi)
-        self.legalMoves = self.game.legalMove()
 
-    def traverse(self, rollOutPolicy=None):
-        if rollOutPolicy is None:
-            tempEnv = deepcopy(self.navi)
-            positions = []
-            values = []
-            while np.sum(tempEnv[:, 0]) < 3:
-                # row = actions in depth 1
-                rowCandi = np.argwhere(tempEnv[:, 0] == 0).flatten()
-                row = random.choice(rowCandi)
-
-                # col = actions in depth 2
-                colCandi = np.argwhere(tempEnv[row, :] == 0).flatten()
-                colCandi = [c for c in colCandi]
-                col = random.choice(colCandi)
-
-                # mark elem choice
-                self.navi[row, 0] = 1
-
-                # rollout info is volatile
-                tempEnv[row, 0] = 1
-                tempEnv[row, col] = 1
-                positions.append((row, col))
-
-                # value of those actions
-                val = self.contextM[row, col]
-                if val != 0:
-                    values.append(np.round(1/val, 2))
-                else:
-                    values.append(0)
-            valueIdx = values.index(max(values))
-            bestElem = positions[valueIdx][0]  # row
-
-            # update children
-            for i, (row, col) in enumerate(positions):
-                self.root.children[row] = values[i]
-
-            return bestElem
-
-    def expand(self, treePolicy=None):
-        self.depth += 1
-
-        bestElem = self.traverse()
-        print("bestElem", bestElem)
-        tempEnv = deepcopy(self.navi)
-        if treePolicy is None:
-            while np.sum(tempEnv[bestElem, :]) < 5:
-                action = random.choice(np.argwhere(tempEnv[bestElem, :] == 0).flatten())
-                tempEnv[bestElem, action] = 1
-                finalAction = bestElem * 4 + action
-                print("finalAction", finalAction)
-                val = self.simulate(finalAction)
-                print("val", val)
-
-    def simulate(self, finalAction):
-        """
-        returns a leaf value with the number of the cards (not considering external rewards)
-        """
-        # convert the action into a leaf index
-
-        targetLeafVal = self.game.leafLen[self.prbIdx].flatten()
-        if targetLeafVal[finalAction]:
-            val = 1 / targetLeafVal[finalAction]
+    def traverse(self, root=None):
+        # tree traversal is for the root
+        if root is None:
+            root = Node(self.prbIdx)
         else:
-            val = 0
-        return val
+            root = root
+        root.rollout()
 
-    def backprop(self, node, val):
-        """ Updates reward and visit counts, propagating up the tree. """
-        if node.parent is None:
-            # increment the visit of the current node's
-            node.N += 1
-            # increment the value of current node's
-            node.Q = self.UCB(node, val)
-            # Calculate the new average reward
-            node.Q += self.UCB(node, val)
-
+    def select(self, root=None):
+        if root is None:
+            root = Node(self.prbIdx)
         else:
-            # increment the visit of the parent's
-            node.parent.N += 1
-            node.parent.Q += np.sum(node.Q) / node.parent.N
-            # increment the visit of the current node's
-            node.N += 1
-            # increment the value of current node's
-            ucb = self.UCB(node, val)
-            # Calculate the new average reward
-            node.Q += ucb
+            root = root
+        maxChild = root.select()
+        print("maxChild", maxChild)
+        return maxChild
 
-    def UCB(self, node, leafVal):
-        if not node.parent:
-            node.parent = self.root
-        else:
-            node.parent = node.parent
+    # def expand(self, maxChild):
+    #     nextState =
 
-        if node.N > 0:
-            ucb = leafVal + self.explorConstant * math.sqrt(math.log(node.parent.N) / node.N)
-        else:
-            ucb = 0
-        return ucb
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

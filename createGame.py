@@ -101,12 +101,11 @@ class Game:
         positionAvail = positions.flatten()
         return positionAvail
 
-    def move(self, depth, element, action=None):
+    def move(self, element=None, action=None):
         positionAvail = self.legalMove(element)
         # track state depth s0: root -> s1: child > s2: leaf
-        if depth == 0:  # if any child was chosen on the root
+        if element is None:  # if any child was chosen on the root
             self.navi[self.prbIdx, action, element] = 1
-        # if depth > 0
         else:
             if action in positionAvail:
                 if np.sum(self.navi[self.prbIdx, element, :]) < 5:
@@ -114,13 +113,14 @@ class Game:
             else:
                 raise ValueError("Illegal move!")
 
-    def isTerminal(self,):
+    def isTerminal(self):
         """
         To check if one node is fully expanded.
         """
-        return np.sum(self.navi[self.prbIdx]) == 15
+        return any(sum(row) == 5 for row in self.navi[self.prbIdx])
 
-    def getReward(self, element, finalChoice):
+    def getReward(self, element, action):
+        finalChoice = element * 4 + action
         if finalChoice == self.answer[self.prbIdx]:
             rwd = 1
         else:
