@@ -21,23 +21,13 @@ class MCTS:
         self.prbIdx = prbIdx
         self.game = Game(self.prbIdx)
         self.contextM, self.cardAvail, self.answer, self.navi, self.leafState = self.game.prbInit()
+        self.root = Node(self.prbIdx)
 
-    def traverse(self, root=None):
+    def traverse(self):
         # tree traversal is for the root
-        if root is None:
-            root = Node(self.prbIdx)
-        else:
-            root = root
-        root.rollout()
+        self.root.rollout()
+        self.root.select()
 
-    def select(self, root=None):
-        if root is None:
-            root = Node(self.prbIdx)
-        else:
-            root = root
-        maxChild = root.select()
-        print("maxChild", maxChild)
-        return maxChild
 
     # def expand(self, maxChild):
     #     nextState =

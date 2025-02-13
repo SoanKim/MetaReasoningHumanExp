@@ -34,7 +34,8 @@ class Node:
         self.actionTaken = actionTaken
 
         # a state node has child nodes (state and action pairs))
-        self.children = defaultdict(tuple)
+        self.children = []
+        # self.children = defaultdict(tuple) --> for self.children[(element, action)] = leafValue
         """
         |---|---|---|---|---|
         | 0 | 0 | 1 | 2 | 3 |
@@ -52,42 +53,29 @@ class Node:
         """
     def isFullyExpanded(self, navi=None):
         if navi is None:
-            navi = self.navi
+            return self
         else:
             navi = navi
-            if len(self.children.keys()) < 4:  #correct?
+            if len(self.children) < 4:
                 return np.sum(navi[:, 0]) == 3
             else:
                 return any(sum(row) == 5 for row in navi)
 
     def select(self):
-        if not self.isFullyExpanded() or self.game.isTerminal():
-            return self
-        else:
-            maxChild = max(self.children.values(), key=self.children.get)
-            # I should update the navi by the maxchild's coordinates
-            print(maxChild)
-        return maxChild
-
-    def UCB(self, value):
         """
-        Fix the problem of division by parent.N, not my N.
-        :param value:
-        :return:
+        It is used only when selecting a child.
         """
-        if self.parent:
-            self.parent = self.parent
-        else:
-            self.parent = self
-
-        # what if there are multiple children? leafVal should be the mean.
-        if self.N > 0:
-            if value != 0:
-                value = value
-            else:
-                value = 0
-            ucb = value + 2 * math.sqrt(math.log(self.parent.N) / self.N)
-            return ucb
+        # if not self.isFullyExpanded() or self.game.isTerminal():
+        #     return self
+        # else:
+        bestChild = None
+        bestUCB = -np.inf
+        for child in self.children:
+            ucb = child.Q + 2 * math.sqrt(math.log(child.parent.N) / child.N)
+            if ucb > bestUCB:
+                bestChild = child
+                bestUCB = ucb
+        return bestChild
 
     def rollout(self):
         # navi for simulation
@@ -97,41 +85,37 @@ class Node:
                 elementAvail = np.argwhere(tempState[:, 0] == 0).flatten()
                 element = random.choice(elementAvail)
             else:
-                if self.game.isTerminal:
-                    element = list(self.children.keys())[0]
-                else:
-                    return self
-            self.N += 1
+                return self
+
             # Track available actions
             tempState[element, 0] = 1
             actionAvail = np.argwhere(tempState[element, :] == 0).flatten()
             action = random.choice(actionAvail)
             tempState[element, action] = 1
             # initialize a child node
+
             child = Node(current=(element, action), parent=self, actionTaken=action)
-
             leafValue = 1/self.contextM[element, action] if self.contextM[element, action] != 0 else 0
-            ucb = self.UCB(leafValue)
 
-            # add children
-            self.children[(element, action)] = ucb
-            self.backprop(reward=leafValue, child=child)
+            # update
+            self.backprop(value=leafValue, child=child)
 
-    def backprop(self, reward, child):
-        #self.N += 1
-        self.Q += reward
-        print("self N", self.N)
-        print(self.children)
+    def backprop(self, value, child):
+        print("================================")
+        # update the parent
+        child.parent.Q += value
+        child.parent.N += 1
+        print("child.parent.N", child.parent.N)
+        print("child.parent.Q", child.parent.Q)
 
-        if child:
-            child.N += 1
-            child.Q += reward
-            print("child.N", child.N)
-            print("child.Q", child.Q)
-        # if self.parent:
-        #     self.parent.N += 1
-        #     self.parent.Q += reward
-        #     print("parent N", self.parent.N)
+        # update the child
+        child.N += 1
+        child.Q += value
+        print("child.N", child.N)
+        print("child.Q", child.Q)
+
+        # add children
+        self.children.append(child)
 
     # def expand(self, child):
     #     if child.N > 0:

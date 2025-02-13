@@ -6,12 +6,6 @@
 
 from humanData import *
 
-"""
-nodeID --> 0 ... 17
-Qtable --> 0 ... 17
-"""
-
-
 class Game:
     """
     This class receives true stimuli from human data and prepares it to calculate leaf values.
