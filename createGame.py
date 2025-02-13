@@ -107,12 +107,6 @@ class Game:
             else:
                 raise ValueError("Illegal move!")
 
-    def isTerminal(self):
-        """
-        To check if one node is fully expanded.
-        """
-        return any(sum(row) == 5 for row in self.navi[self.prbIdx])
-
     def getReward(self, element, action):
         finalChoice = element * 4 + action
         if finalChoice == self.answer[self.prbIdx]:

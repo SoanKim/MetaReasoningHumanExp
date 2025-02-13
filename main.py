@@ -11,10 +11,6 @@ from createNode import Node
 import random
 import matplotlib.pyplot as plt
 
-# from agent import Agent
-# from createMCTS import MCTS
-# from createNode import Node
-
 data = df1Subj1
 scores = []
 

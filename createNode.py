@@ -6,15 +6,13 @@
 
 import random
 import numpy as np
-from copy import deepcopy
+from copy import copy, deepcopy
 from createGame import *
 from collections import defaultdict
 import math
 
 
 class Node:
-    N = 0
-    Q = 0
 
     def __init__(self, prbIdx=None, current=None, parent=None, actionTaken=None):
 
@@ -23,8 +21,11 @@ class Node:
         self.game = Game(self.prbIdx)
         self.contextM, self.cardAvail, self.answer, self.navi, self.leafState = self.game.prbInit()
 
+        # C for UCB
+        self.exploreConstant = 2
+
         # row and column coordinates. (-1, -1) for root.
-        self.current = current if current is None else (-1, -1)
+        self.current = (-1, -1) if current is None else current
 
         # immediate reward
         self.reward = 0
@@ -36,6 +37,13 @@ class Node:
         # a state node has child nodes (state and action pairs))
         self.children = []
         # self.children = defaultdict(tuple) --> for self.children[(element, action)] = leafValue
+
+        # tracking visits and rewards
+        self.N = 0
+        self.Q = 0
+
+        # track depth
+        self.depth = 0
         """
         |---|---|---|---|---|
         | 0 | 0 | 1 | 2 | 3 |
@@ -51,167 +59,128 @@ class Node:
         after selecting a leaf val: depth 3
         after receiving reward = terminal
         """
-    def isFullyExpanded(self, navi=None):
-        if navi is None:
-            return self
-        else:
-            navi = navi
-            if len(self.children) < 4:
-                return np.sum(navi[:, 0]) == 3
-            else:
-                return any(sum(row) == 5 for row in navi)
 
-    def select(self):
+    def isFullyExpanded(self):
         """
-        It is used only when selecting a child.
+        Fully expanded = leaf state
         """
-        # if not self.isFullyExpanded() or self.game.isTerminal():
-        #     return self
-        # else:
+        if self.depth == 0:
+            return np.sum(self.navi[:, 0]) == 3
+        else:
+            return any(sum(row) == 5 for row in self.navi)
+
+    def isTerminal(self):
+        """
+        To check if one node is fully expanded.
+        """
+        return any(sum(row) == 5 for row in self.navi)
+
+    def UCB(self):
         bestChild = None
         bestUCB = -np.inf
         for child in self.children:
-            ucb = child.Q + 2 * math.sqrt(math.log(child.parent.N) / child.N)
+            print("child.N: ", child.N)
+            ucb = child.Q + self.exploreConstant * math.sqrt(math.log(child.parent.N) / child.N)
+            # update N and Q of the parent and the child(self)
             if ucb > bestUCB:
                 bestChild = child
                 bestUCB = ucb
+        self.navi[bestChild.current[0], bestChild.current[1]] = 1
+
         return bestChild
 
-    def rollout(self):
-        # navi for simulation
+    def select(self):  # select a child among children
+        # navi is a state for simulation
         tempState = deepcopy(self.navi)
-        while not self.isFullyExpanded(navi=tempState):  # or "for i in range(3):"
-            if Node.N == 0:
+
+        while not self.isFullyExpanded():  # or "for i in range(3):"
+            if self.N == 0:  # choose an element if the depth is 0
                 elementAvail = np.argwhere(tempState[:, 0] == 0).flatten()
                 element = random.choice(elementAvail)
             else:
-                return self
+                element = child.current[0]  # cache the stored element if the depth is deeper
 
-            # Track available actions
+            # track available actions(dims)
             tempState[element, 0] = 1
+
+            # store on the invariable state
+            self.navi[element, 0] = 1
+
+            # according to the depth
             actionAvail = np.argwhere(tempState[element, :] == 0).flatten()
+            print("actionAvail: ", actionAvail)
             action = random.choice(actionAvail)
+
+            # do not record on the invariable state
             tempState[element, action] = 1
+
             # initialize a child node
+            child = Node(prbIdx=None, current=(element, action), parent=self, actionTaken=action)
+            print("depth of child:", child.depth)
+            print("child's current state: ", child.current)
+            leafVal = self.rollout(child)
+            self.backprop(leafVal, child)
 
-            child = Node(current=(element, action), parent=self, actionTaken=action)
-            leafValue = 1/self.contextM[element, action] if self.contextM[element, action] != 0 else 0
+            # add the child
+            self.children.append(child)
 
-            # update
-            self.backprop(value=leafValue, child=child)
+        # compare the children at the same depth
+        bestChild = self.UCB()
+        print("bestChild current: ", bestChild.current)
+        self.navi[bestChild.current] = 1
+        print("navi:", self.navi)
 
-    def backprop(self, value, child):
+
+
+    def expand(self, bestChild):
+        """
+        expand - rollout - backprop
+        """
+        # store the bestChild's coordinate on the invariable state
+
+        element = bestChild.current[0]
+        actionAvail = np.argwhere(self.navi[element, :] == 0).flatten()
+        action = random.choice(actionAvail)
+        newNode = Node(current=(element, action), parent=bestChild, actionTaken=action)
+
+        bestChild.depth += 1
+
+        return newNode
+
+    def rollout(self, node):
+        """
+        roll out function only runs when the root is not fully expanded under MCTS class.
+        return: leaf value
+        """
+        # recall the stored element
+        element = node.current[0]
+
+        # choose a random action
+        actionAvail = np.argwhere(self.navi[element, :] == 0).flatten()
+        action = random.choice(actionAvail)
+
+        # leaf value
+        leafValue = 1 / self.contextM[element, action] if self.contextM[element, action] != 0 else 0
+
+        # update the depth after expansion
+        return leafValue
+
+    def backprop(self, value, node):
         print("================================")
         # update the parent
-        child.parent.Q += value
-        child.parent.N += 1
-        print("child.parent.N", child.parent.N)
-        print("child.parent.Q", child.parent.Q)
+        node.parent.Q += value
+        node.parent.N += 1
+
+        print("child.parent.N", node.parent.N)
+        print("child.parent.Q", node.parent.Q)
 
         # update the child
-        child.N += 1
-        child.Q += value
-        print("child.N", child.N)
-        print("child.Q", child.Q)
+        node.N += 1
+        node.Q += value
+        print("child.N", node.N)
+        print("child.Q", node.Q)
 
-        # add children
-        self.children.append(child)
-
-    # def expand(self, child):
-    #     if child.N > 0:
-    #         element = list(self.children.keys())[0]
-    #     else:
-    #         element = None
-    #
-    #     # If never visited, don't expand.
-    #     if Node.N == 0:
-
-    #     actionAvail = self.game.legalMove(element=element)
-    #     action = random.choice(actionAvail)
-    #     value = self.simulate(action)
-    # else:
-    #     return self.children[action] = int(np.nan)
-
-
-
-        # else:
-        #     tempEnv = deepcopy(node.state)
-        #     positions = []
-        #     values = []
-        #     while np.sum(node.state[:, 0]) < 3:
-        #         # row = actions in depth 1
-        #         rowCandi = np.argwhere(tempEnv[:, 0] == 0).flatten()
-        #         row = random.choice(rowCandi)
-        #
-        #         # col = actions in depth 2
-        #         colCandi = np.argwhere(tempEnv[row, :] == 0).flatten()
-        #         colCandi = [c for c in colCandi]
-        #         col = random.choice(colCandi)
-        #
-        #         # mark elem choice
-        #         self.navi[row, 0] = 1
-        #
-        #         # rollout info is volatile
-        #         tempEnv[row, 0] = 1
-        #         tempEnv[row, col] = 1
-        #         positions.append((row, col))
-        #
-        #         # value of those actions
-        #         val = self.contextM[row, col]
-        #         if val != 0:
-        #             values.append(np.round(1 / val, 2))
-        #         else:
-        #             values.append(0)
-        #
-        #         # Calculate UCB
-        #         ucb = self.UCB(node=node, leafVal=val)
-        #         print("ucb: {}".format(ucb))
-        #
-        #     valueIdx = values.index(max(values))
-        #     bestElem = positions[valueIdx][0]  # row
-        #
-        #     # update children
-        #     for i, (row, col) in enumerate(positions):
-        #         self.root.children[row] = values[i]
-        #
-        #     return bestElem
-
-
-
-
-    #     """ Updates reward and visit counts, propagating up the tree. """
-    #     if self.parent is None:
-    #         # increment the visit of the current node's
-    #         self.visitSum += 1
-    #         # increment the value of current node's
-    #         node.valueSum = self.UCB(node, val)
-    #         # Calculate the new average reward
-    #         node.valueSum += self.UCB(node, val)
-    #
-    #     else:
-    #         # increment the visit of the parent's
-    #         node.parent.visitSum += 1
-    #         node.parent.valueSum += np.sum(node.valueSum) / node.parent.visitSum
-    #         # increment the visit of the current node's
-    #         node.visitSum += 1
-    #         # increment the value of current node's
-    #         ucb = self.UCB(node, val)
-    #         # Calculate the new average reward
-    #         node.valueSum += ucb
-    #
-    #
-    #
-    # def trackDepth(self):
-    #     if np.sum(self.current[:, 0]) < 3:
-    #         self.depth = 0
-    #     elif np.sum(self.current[:, 0]) == 3 and np.sum(self.current[:, 1:]) < 12:
-    #         self.depth = 1
-    #     elif np.sum(self.current[:, 0]) == 3 and np.sum(self.current[:, 1:]) == 12:
-    #         self.depth = 2
-    #     return self.depth
-
-
-
+        print("node depth:", self.depth)
 
 
 # if __name__ == '__main__':

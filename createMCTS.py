@@ -12,25 +12,32 @@ import numpy as np
 import random
 import math
 
+"""
+Traverse is horizontal, and expand is vertical.
+"""
 
 class MCTS:
-
     def __init__(self, prbIdx):  # game = an indexed problem
-        self.exploreConstant = 2
+
         # initialize game
         self.prbIdx = prbIdx
-        self.game = Game(self.prbIdx)
-        self.contextM, self.cardAvail, self.answer, self.navi, self.leafState = self.game.prbInit()
         self.root = Node(self.prbIdx)
 
     def traverse(self):
-        # tree traversal is for the root
-        self.root.rollout()
-        self.root.select()
+        # to check if it's a leaf node or there are available actions
+        while not self.root.isTerminal():
+
+            bestChild = self.root.select()
+            print("bestChild: {}".format(bestChild.current))
+            newNode = self.root.expand(bestChild)
+            print("newNode: {}".format(newNode.current))
+            leafVal = self.root.rollout(newNode)
+            print("leafVal: {}".format(leafVal))
 
 
-    # def expand(self, maxChild):
-    #     nextState =
+
+
+
 
 
 
