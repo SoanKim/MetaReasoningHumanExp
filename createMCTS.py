@@ -21,18 +21,20 @@ class MCTS:
 
         # initialize game
         self.prbIdx = prbIdx
-        self.root = Node(self.prbIdx)
+        self.node = Node(self.prbIdx)
+
+        # initialize Q table --> going on througout the game
+        self.qTable = np.zeros((3, 5))
 
     def traverse(self):
         # to check if it's a leaf node or there are available actions
-        while not self.root.isTerminal():
-
-            bestChild = self.root.select()
-            print("bestChild: {}".format(bestChild.current))
-            newNode = self.root.expand(bestChild)
-            print("newNode: {}".format(newNode.current))
-            leafVal = self.root.rollout(newNode)
-            print("leafVal: {}".format(leafVal))
+        while not self.node.isFullyExpanded():
+            self.node.select()
+            # print("bestChild: {}".format(bestChild.current))
+            # newNode = self.node.expand(bestChild)
+            # print("newNode: {}".format(newNode.current))
+            # leafVal = self.node.rollout(newNode)
+            # print("leafVal: {}".format(leafVal))
 
 
 

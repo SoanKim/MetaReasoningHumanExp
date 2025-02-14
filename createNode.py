@@ -39,11 +39,15 @@ class Node:
         # self.children = defaultdict(tuple) --> for self.children[(element, action)] = leafValue
 
         # tracking visits and rewards
-        self.N = 0
-        self.Q = 0
+        self.N = defaultdict()
+        self.Q = defaultdict(lambda:0)
 
         # track depth
         self.depth = 0
+
+        # initialize UCB table for selection
+        self.ucbTable = np.full((3, 5), np.inf)
+
         """
         |---|---|---|---|---|
         | 0 | 0 | 1 | 2 | 3 |
@@ -64,22 +68,16 @@ class Node:
         """
         Fully expanded = leaf state
         """
-        if self.depth == 0:
-            return np.sum(self.navi[:, 0]) == 3
-        else:
-            return any(sum(row) == 5 for row in self.navi)
-
-    def isTerminal(self):
-        """
-        To check if one node is fully expanded.
-        """
+        # if self.depth == 0:
+        #     return np.sum(self.navi[:, 0]) == 3
+        # else:
         return any(sum(row) == 5 for row in self.navi)
 
     def UCB(self):
         bestChild = None
         bestUCB = -np.inf
         for child in self.children:
-            print("child.N: ", child.N)
+
             ucb = child.Q + self.exploreConstant * math.sqrt(math.log(child.parent.N) / child.N)
             # update N and Q of the parent and the child(self)
             if ucb > bestUCB:
@@ -93,42 +91,46 @@ class Node:
         # navi is a state for simulation
         tempState = deepcopy(self.navi)
 
-        while not self.isFullyExpanded():  # or "for i in range(3):"
-            if self.N == 0:  # choose an element if the depth is 0
-                elementAvail = np.argwhere(tempState[:, 0] == 0).flatten()
-                element = random.choice(elementAvail)
+        if np.sum(tempState[:, 0]) > 3:  # root
+            actionAvail = np.argwhere(tempState[self.current[0], :] == 0).flatten()
+        else:
+            actionAvail = np.argwhere(tempState[:, 0] == 0).flatten() # root
+
+        for action in actionAvail:
+            if np.sum(tempState[:, 0]) < 3:  # root
+                element = action
+                action = 0
+                self.navi[element, 0] = 1
             else:
-                element = child.current[0]  # cache the stored element if the depth is deeper
+                element = self.current[0]
 
-            # track available actions(dims)
-            tempState[element, 0] = 1
+            self.current = (element, action)
 
-            # store on the invariable state
-            self.navi[element, 0] = 1
+            # track element
+            tempState[self.current] = 1
+            self.N[self.current] = 1
+            print("self.Q[self.current]", self.Q[self.current])
+            print("self.N[self.current]", self.N[self.current])
 
-            # according to the depth
-            actionAvail = np.argwhere(tempState[element, :] == 0).flatten()
-            print("actionAvail: ", actionAvail)
-            action = random.choice(actionAvail)
+            self.ucbTable[element, action] = \
+                self.Q[self.current] + self.exploreConstant * math.sqrt(math.log(self.N[self.current]) / self.N[self.current])
 
-            # do not record on the invariable state
-            tempState[element, action] = 1
+        #print(self.ucbTable)
 
-            # initialize a child node
-            child = Node(prbIdx=None, current=(element, action), parent=self, actionTaken=action)
-            print("depth of child:", child.depth)
-            print("child's current state: ", child.current)
-            leafVal = self.rollout(child)
-            self.backprop(leafVal, child)
 
-            # add the child
-            self.children.append(child)
 
-        # compare the children at the same depth
-        bestChild = self.UCB()
-        print("bestChild current: ", bestChild.current)
-        self.navi[bestChild.current] = 1
-        print("navi:", self.navi)
+
+        #     leafVal = self.rollout(child)
+        #     self.backprop(leafVal, child)
+        #
+        #     # add the child
+        #     self.children.append(child)
+        #
+        # # compare the children at the same depth
+        # bestChild = self.UCB()
+        # print("bestChild current: ", bestChild.current)
+        # self.navi[bestChild.current] = 1
+        # print("navi:", self.navi)
 
 
 
