@@ -16,8 +16,15 @@ scores = []
 
 
 for prbIdx in range(1):
-    mcts = MCTS(prbIdx)
-    mcts.traverse()
+    # mcts = MCTS(prbIdx)
+    # mcts.traverse()
+    node = Node(prbIdx=prbIdx)
+    bestChild = node.select(policy=True)
+    print(" ============= best element has chosen =============")
+    newNode = bestChild.select(policy=True)
+
+
+
 
 
 

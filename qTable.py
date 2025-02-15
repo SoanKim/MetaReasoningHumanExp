@@ -4,13 +4,11 @@
 # Title: (Enter feature name here)
 # Explanation: (Enter explanation here)
 
-
 import json
 from collections import defaultdict
-from qfunction import QFunction
 
 
-class QTable(QFunction):
+class QTable:
     def __init__(self, alpha=0.1, default_q_value=0.0):
         self.qtable = defaultdict(lambda: default_q_value)
         self.alpha = alpha

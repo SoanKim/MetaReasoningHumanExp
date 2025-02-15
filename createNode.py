@@ -13,9 +13,9 @@ import math
 
 
 class Node:
+    visits = defaultdict(lambda: 0)
 
-    def __init__(self, prbIdx=None, current=None, parent=None, actionTaken=None):
-
+    def __init__(self, prbIdx=None, current=None, parent=None):
         # initialize game
         self.prbIdx = 0 if prbIdx is None else prbIdx
         self.game = Game(self.prbIdx)
@@ -32,21 +32,23 @@ class Node:
 
         # initialize node properties
         self.parent = parent  # None for root
-        self.actionTaken = actionTaken
 
         # a state node has child nodes (state and action pairs))
         self.children = []
         # self.children = defaultdict(tuple) --> for self.children[(element, action)] = leafValue
 
         # tracking visits and rewards
-        self.N = defaultdict()
-        self.Q = defaultdict(lambda:0)
+        self.N = 0
+        self.Q = 0
 
         # track depth
         self.depth = 0
 
         # initialize UCB table for selection
         self.ucbTable = np.full((3, 5), np.inf)
+
+        # initialize Q table
+        self.qTable = np.zeros((3, 5))
 
         """
         |---|---|---|---|---|
@@ -64,125 +66,192 @@ class Node:
         after receiving reward = terminal
         """
 
-    def isFullyExpanded(self):
+    def isFullyExpanded(self, state):
         """
         Fully expanded = leaf state
         """
-        # if self.depth == 0:
-        #     return np.sum(self.navi[:, 0]) == 3
-        # else:
-        return any(sum(row) == 5 for row in self.navi)
+        if self.depth == 0:
+            print("depth is zero and not yet fully expanded")
+            return np.sum(state[:, 0]) == 3
+        else:
+            print("depth is non zero and not yet fully expanded")
+            return any(sum(row) == 5 for row in state)
 
-    def UCB(self):
+
+    def bestUCB(self):
         bestChild = None
         bestUCB = -np.inf
         for child in self.children:
-
             ucb = child.Q + self.exploreConstant * math.sqrt(math.log(child.parent.N) / child.N)
             # update N and Q of the parent and the child(self)
             if ucb > bestUCB:
                 bestChild = child
                 bestUCB = ucb
         self.navi[bestChild.current[0], bestChild.current[1]] = 1
-
         return bestChild
 
-    def select(self):  # select a child among children
+    def updateQtable(self, node, value, alpha=0.1):
+        delta = (1 / (Node.visits[node.current])) * (value - self.qTable[node.current])
+        self.qTable[node.current] = self.qTable[node.current] + alpha * delta
+
+    def select(self, policy: bool):  # select a child among children
         # navi is a state for simulation
         tempState = deepcopy(self.navi)
 
-        if np.sum(tempState[:, 0]) > 3:  # root
-            actionAvail = np.argwhere(tempState[self.current[0], :] == 0).flatten()
-        else:
-            actionAvail = np.argwhere(tempState[:, 0] == 0).flatten() # root
+        # make a child node at every position
+        # if root, both current status and action available are different.
+        bestChild = None
+        bestUCB = -np.inf
 
-        for action in actionAvail:
-            if np.sum(tempState[:, 0]) < 3:  # root
-                element = action
-                action = 0
+        if self.depth == 0:  # element of the root
+            print("================ depth is zero =================")
+            parent = Node()
+            while not self.isFullyExpanded(tempState):  # by depth
+                elementAvail = np.argwhere(tempState[:, 0] == 0).flatten()
+                if not policy:
+                    element = random.choice(elementAvail)
+                else:
+                    element = None
+                    bestQval = 0
+                    for elem in elementAvail:
+                        qVal = self.qTable[elem, 0]
+                        if qVal > bestQval:
+                            bestQval = qVal
+                            element = elem
+                    if element is None:
+                        element = random.choice(elementAvail)
+                print("element: {}".format(element))
+
+                # init a child node
+                child = Node(current=(element, 0), parent=parent)
+
+                # update the state on the navi as well as tempState
                 self.navi[element, 0] = 1
-            else:
+                tempState[element, 0] = 1
+                value = self.rollout(child)
+
+                # backup to make sure the visitCount is not zero
+                self.backprop(value=value, node=child)
+
+                # add child
+                parent.children.append(child)
+
+                # update Qtable: update the value and the visits --> refer to Dr. Miller
+                self.updateQtable(node=child, value=value)
+
+                # update UCB table
+                ucb = child.Q + self.exploreConstant * math.sqrt(math.log(child.parent.N) / child.N)
+                self.ucbTable[element, 0] = ucb
+
+                if ucb > bestUCB:
+                    bestChild = child
+                    bestUCB = ucb
+                    bestChild.depth += 1
+            print("qTable", self.qTable)
+            print("")
+            print("ucbTable", self.ucbTable)
+            print("")
+            print("value", self.contextM)
+            print("")
+            print("bestChild.Q", bestChild.Q)
+            print("")
+            print("navi", self.navi)
+            print("")
+            print("tempState", tempState)
+            print("")
+            print("bestChild.current", bestChild.current)
+
+        else:
+            print("++++++++++++++++++++ depth is Non zero +++++++++++++++++")
+            parent = self
+            print("parent.Q", self.parent.Q)
+            while not self.isFullyExpanded(tempState):  # by depth
                 element = self.current[0]
+                actionAvail = np.argwhere(tempState[element, :] == 0).flatten()
 
-            self.current = (element, action)
+                if not policy:
+                    action = random.choice(actionAvail)
+                else:
+                    action = None
+                    bestQval = 0
+                    for act in actionAvail:
+                        qVal = self.qTable[element, act]
+                        if qVal > bestQval:
+                            bestQval = qVal
+                            action = act
+                    if action is None:
+                        action = random.choice(actionAvail)
+                print("action: {}".format(action))
 
-            # track element
-            tempState[self.current] = 1
-            self.N[self.current] = 1
-            print("self.Q[self.current]", self.Q[self.current])
-            print("self.N[self.current]", self.N[self.current])
+                child = Node(current=(element, action))
+                child.current = (element, action)
 
-            self.ucbTable[element, action] = \
-                self.Q[self.current] + self.exploreConstant * math.sqrt(math.log(self.N[self.current]) / self.N[self.current])
+                # update the state on the tempState
+                tempState[self.current[0], action] = 1
+                value = self.rollout(child)
 
-        #print(self.ucbTable)
+                # backup
+                self.backprop(value=value, node=child)
 
+                # add child
+                parent.children.append(child)
 
+                # update Qtable: update the value and the visits --> refer to Dr. Miller
+                self.updateQtable(node=child, value=value)
 
+                # ucb Table
+                ucb = child.Q + self.exploreConstant * math.sqrt(math.log(child.parent.N) / child.N)
+                self.ucbTable[element, action] = ucb
 
-        #     leafVal = self.rollout(child)
-        #     self.backprop(leafVal, child)
-        #
-        #     # add the child
-        #     self.children.append(child)
-        #
-        # # compare the children at the same depth
-        # bestChild = self.UCB()
-        # print("bestChild current: ", bestChild.current)
-        # self.navi[bestChild.current] = 1
-        # print("navi:", self.navi)
+                if ucb > bestUCB:
+                    bestChild = child
+                    bestUCB = ucb
+                    bestChild.depth += 1
 
-
+            print("qTable", self.qTable)
+            print("")
+            print("ucbTable", self.ucbTable)
+            print("")
+            print("value", self.contextM)
+            print("")
+            print("bestChild.Q", bestChild.Q)
+            print("")
+            print("navi", self.navi)
+            print("")
+            print("tempState", tempState)
+            print("")
+            print("bestChild.current", bestChild.current)
+        return bestChild
 
     def expand(self, bestChild):
         """
         expand - rollout - backprop
         """
         # store the bestChild's coordinate on the invariable state
-
         element = bestChild.current[0]
         actionAvail = np.argwhere(self.navi[element, :] == 0).flatten()
-        action = random.choice(actionAvail)
-        newNode = Node(current=(element, action), parent=bestChild, actionTaken=action)
 
-        bestChild.depth += 1
+
+        action = random.choice(actionAvail)
+        newNode = Node(current=(element, action), parent=bestChild)
 
         return newNode
 
     def rollout(self, node):
-        """
-        roll out function only runs when the root is not fully expanded under MCTS class.
-        return: leaf value
-        """
-        # recall the stored element
-        element = node.current[0]
-
-        # choose a random action
-        actionAvail = np.argwhere(self.navi[element, :] == 0).flatten()
-        action = random.choice(actionAvail)
-
-        # leaf value
-        leafValue = 1 / self.contextM[element, action] if self.contextM[element, action] != 0 else 0
-
-        # update the depth after expansion
+        leafValue = 1 / self.contextM[node.current] if self.contextM[node.current] != 0 else 0
         return leafValue
 
     def backprop(self, value, node):
-        print("================================")
+        # update visits of the Q table
+        Node.visits[node.current] = Node.visits[node.current] + 1
+
         # update the parent
         node.parent.Q += value
         node.parent.N += 1
 
-        print("child.parent.N", node.parent.N)
-        print("child.parent.Q", node.parent.Q)
-
         # update the child
         node.N += 1
         node.Q += value
-        print("child.N", node.N)
-        print("child.Q", node.Q)
-
-        print("node depth:", self.depth)
 
 
 # if __name__ == '__main__':
