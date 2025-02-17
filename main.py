@@ -13,16 +13,31 @@ import matplotlib.pyplot as plt
 
 data = df1Subj1
 scores = []
-
+# print("len(data):", len(data))
+# total = np.zeros((3, 5))
 
 for prbIdx in range(1):
-    # mcts = MCTS(prbIdx)
-    # mcts.traverse()
-    node = Node(prbIdx=prbIdx)
-    bestChild = node.select(policy=True)
-    print(" ============= best element has chosen =============")
-    newNode = bestChild.select(policy=True)
+    root = Node(prbIdx=prbIdx)
+    root.expand(parent=root)
+    #leafVal = root.expand(parent=root, heuristic=True)
 
+
+        #root.backprop()
+    #newNode = bestChild.select(policy=True)
+
+    # # Check the total number of cases
+    # game = Game(prbIdx=prbIdx)
+    # contextM, cardAvail, answer, navi, leafState = game.prbInit()
+    #
+
+#     for row in range(contextM.shape[0]):
+#         for col in range(contextM.shape[1]):
+#             total[row][col] += contextM[row][col]
+#
+# print("total")
+# print(total)
+# normalized = total[:, 0] / total[:, 0].sum()
+# print(normalized)
 
 
 

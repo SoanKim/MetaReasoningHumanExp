@@ -39,7 +39,7 @@ df2 = idxCoding(df2)
 exp1Subj = df1.prolific_id.unique()
 exp2Subj = df2.prolific_id.unique()
 
-df1Subj1 = df1.loc[df1.prolific_id == exp1Subj[0]]
+df1Subj1 = df1.loc[df1.prolific_id == exp1Subj[1]]  # No. 1 and 5 have all trials
 
 def separateCards(df):
     combi = sorted([''.join(ii) for ii in itertools.combinations([str(i) for i in range(1, 6)], r=3)])
