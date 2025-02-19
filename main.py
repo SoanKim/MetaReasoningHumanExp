@@ -18,7 +18,18 @@ scores = []
 
 for prbIdx in range(1):
     root = Node(prbIdx=prbIdx)
-    root.expand(parent=root)
+    root.select()
+    root.rollout()
+
+
+
+    # root.select()
+    # root.expand()
+    # root.rollout()
+    # root.backprop()
+
+
+    # root.expand(parent=root)
     #leafVal = root.expand(parent=root, heuristic=True)
 
 

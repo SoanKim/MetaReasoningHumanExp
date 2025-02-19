@@ -28,7 +28,7 @@ class MCTS:
 
     def traverse(self):
         # to check if it's a leaf node or there are available actions
-        self.node.select(heuristic=True)
+        self.node.chooseAction(heuristic=True)
             # print("bestChild: {}".format(bestChild.current))
             # newNode = self.node.expand(bestChild)
             # print("newNode: {}".format(newNode.current))
