@@ -5,7 +5,7 @@
 # Explanation: (Enter explanation here)
 
 from humanData import *
-from createMCTS import MCTS
+# from createMCTS import MCTS
 from createGame import Game
 from createNode import Node
 import random
@@ -16,12 +16,13 @@ scores = []
 # print("len(data):", len(data))
 # total = np.zeros((3, 5))
 
-for prbIdx in range(1):
-    root = Node(prbIdx=prbIdx)
-    root.select()
-    root.rollout()
-
-
+for prbIdx in range(3):
+    print("************************* new problem starts *****************************")
+    root = Node(prbIdx=prbIdx, current=None, traverse=False, parent=None)
+    action = root.select()
+    reward = root.rollout()
+    root.backprop(reward=reward)
+    print("root.ucbTable", root.ucbTable)
 
     # root.select()
     # root.expand()
