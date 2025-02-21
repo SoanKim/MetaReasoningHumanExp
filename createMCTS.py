@@ -34,7 +34,7 @@ if __name__ == '__main__':
         # to check if it's a leaf node or there are available actions
         root = Node(prbIdx=prbIdx)
         root.select(ucbTable=ucbTable)
-        reward = root.rollout()
+        reward = root.getReward()
         root.backprop(reward=reward, qTable=qTable, ucbTable=ucbTable)
 
 

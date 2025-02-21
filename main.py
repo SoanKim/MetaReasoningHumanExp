@@ -19,10 +19,10 @@ scores = []
 for prbIdx in range(3):
     print("************************* new problem starts *****************************")
     root = Node(prbIdx=prbIdx, current=None, traverse=False, parent=None)
-    action = root.select()
-    reward = root.rollout()
-    root.backprop(reward=reward)
-    print("root.ucbTable", root.ucbTable)
+    # action = root.select()
+    # reward = root.rollout()
+    # root.backprop(reward=reward)
+    # print("root.ucbTable", root.ucbTable)
 
     # root.select()
     # root.expand()
