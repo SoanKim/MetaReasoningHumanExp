@@ -11,6 +11,11 @@ from createGame import *
 from collections import defaultdict
 import math
 
+"""
+TO DO:
+keep track of every child's visits
+update qtable and ucb table of every child
+"""
 class Node:
     visits = defaultdict(lambda: 0)  # please initialize this every trial
     qTable = np.zeros((3, 5))
@@ -23,10 +28,10 @@ class Node:
         self.prbIdx = 0 if prbIdx is None else prbIdx
         self.game = Game(self.prbIdx)
         self.contextM, self.cardAvail, self.answer, self.monitor, self.leafState = self.game.prbInit()
-
+        print("self.leafstate", self.leafState)
         # C for UCB
         self.exploreConstant = 2
-        self.gamma = 1
+        self.gamma = 0.95
 
         # row and column coordinates. (-1, -1) for root. Keep track of the current location regardless who you are.
         self.current = (-1, -1) if current is None else current
@@ -44,10 +49,10 @@ class Node:
         self.depth = 0
 
         # track N of the current node
-        self.N = defaultdict(tuple)
+        self.N = 0
 
         # reward comes from the leaf value
-        self.R = defaultdict(tuple)
+        self.R = 0
 
         """
         |---|---|---|---|---|   sum(1st col) < 3: depth 0          before selecting a leaf val: depth 2
@@ -57,33 +62,128 @@ class Node:
         |---|---|---|---|---|
         """
 
-    def isFullyExpanded(self, state=None):  # checking if it reached the leaf state
-        if not state:
-            state = self.monitor
-        else:
-            state = state
-        rowSum = [sum(row) for row in state]
-        if traverse:
-            d1idx = 3
-            d2idx = 5
-        else:
-            d1idx = 1
-            d2idx = 2
+    def isFullyExpanded(self):  # checking if it reached the leaf state
+        rowSum = [sum(row) for row in self.monitor]
 
-        # modify the number of actions as you like.
-        if np.sum(state[:, 0]) < d1idx and d2idx not in rowSum:
+        if np.sum(self.monitor[:, 0]) < 3 and 5 not in rowSum:
             self.depth = 0  # num of children = 3
             return False, False
-        elif np.sum(state[:, 0]) == d1idx and d2idx not in rowSum:
+        elif np.sum(self.monitor[:, 0]) == 3 and 5 not in rowSum:
             self.depth = 1  # num of children = 4
             return True, False
-        elif np.sum(state[:, 0]) == d1idx and d2idx in rowSum:  # any(li) means all elements of list are True
+        elif np.sum(self.monitor[:, 0]) == 3 and 5 in rowSum:  # any(li) means all elements of list are True
             self.depth = 2  # num of cards varies across trials
             return True, True
 
-    def updateQtable(self, reward):
-        # print("----------- context ------------", self.contextM)
+    def search(self):
+        if self.N == 0:
+            while self.isFullyExpanded() != (True, True):
+                self.select()  # get actions recursively
+        else:
+            self.select()
+        parent = Node(prbIdx=self.prbIdx, current=(self.current[0], 0), parent=self)
+        newChild = Node(prbIdx=self.prbIdx, current=self.current, parent=parent)
+        self.children.append(newChild)
+
+        # add children
+
+        print("len children: {}".format(len(self.children)))
+        print("self.current:{}".format(self.current))
+
+        if self.isFullyExpanded() == (True, True):
+            final = True
+        else:
+            final = False
+        rwd = self.rollout(final=final)
+        self.backprop(rwd)
+        print("rwd: {}".format(rwd))
+        print("Node.visits", Node.visits)
+
+    def getReward(self):
+        if self.depth == 2:
+            finalAction = self.current[0] * 4 + self.current[1] - 1
+        else:
+            raise ValueError('Not yet a leaf node (depth!= 2)')
+        return self.leafState[finalAction]
+
+    def backprop(self, reward):
+        for child_i, child in enumerate(self.children):
+            print("child #: {}, current: {}".format(child_i, child.current))
+            Node.visits[child.current] += 1
+            self.updateUCB(reward=reward)
+            self.N += 1
+            self.R += reward
+
+            if child.parent is not None:
+                Node.visits[child.parent.current] += 1
+
+    def rollout(self, final: bool, rolloutPolicy=None):
+        """
+        todo: get the reward from the leaf node
+        :input: s', a' d
+        :return: R from depth 2
+        """
+
+        if self.depth == 2:
+            numCards = self.contextM[self.current]
+            if numCards == 0:
+                r = 0
+            else:
+                r = 1/numCards
+            if final:
+                rwd = self.getReward()
+                R = r + r * pow(self.gamma, self.depth) * rwd
+            else:
+                R = r + r * pow(self.gamma, self.depth)
+        else:
+            raise ValueError('Not yet a leaf node (depth != 2)')
+        return R
+
+    def select(self, treePolicy=None):
+        """
+        todo: choose actions recursively till the leaf
+        input: current state
+        :return: next state and depth + 1
+        """
+        if self.depth == 0:
+            maxUCB = max(Node.ucbTable[:, 0])
+            actions = np.argwhere(Node.ucbTable[:, 0] == maxUCB).flatten()
+
+            # update the location
+            if len(actions) > 1:
+                action = random.choice(actions)
+            else:
+                action = actions
+            print("maxUCB", maxUCB)
+            print("best action:", action)
+
+            self.current = (action, 0)
+
+        elif self.depth == 1:
+            maxUCB = max(Node.ucbTable[self.current[0], 1:])
+            actions = np.argwhere(Node.ucbTable[self.current[0], 1:] == maxUCB).flatten() + 1
+            # update the location
+            if len(actions) > 1:
+                action = random.choice(actions)
+            else:
+                action = actions
+            print("maxUCB", maxUCB)
+            print("best action:", action)
+            self.current = (self.current[0], action)
+
+        else:
+            self.current = self.current
+            print("It's already at leaf node. Roll out.")
+
+        self.monitor[self.current] = 1
+        print("self.monitor")
+        print(self.monitor)
+        print("depth: {}".format(self.depth))
+
+    def updateUCB(self, reward):
         childN = Node.visits[self.current]
+        if childN == 0:
+            Node.ucbTable[self.current] = np.inf
         if self.depth == 0:
             parentN = Node.visits[-1, -1]
         elif self.depth == 1:
@@ -91,143 +191,17 @@ class Node:
         else:
             parentN = Node.visits[self.current]
         print("parentN: {}, childN: {}".format(parentN, childN))
-        delta = reward - Node.qTable[self.current] / childN
-        print("delta:{}".format(delta))
-        Node.qTable[self.current] = Node.qTable[self.current] + delta
+        # delta = reward - Node.qTable[self.current] / childN
+
+        Node.qTable[self.current] = Node.qTable[self.current] + reward
         # update the root as well
-        Node.qTable[self.current[0], 0] = Node.qTable[self.current[0], 0] + delta
+        Node.qTable[self.current[0], 0] = Node.qTable[self.current[0], 0] + reward
 
         ucb = Node.qTable[self.current] + self.exploreConstant * math.sqrt(math.log(parentN) / childN)
+        print("ucb:{}".format(ucb))
         Node.ucbTable[self.current] = Node.ucbTable[self.current] + ucb
         # update the root as well
         Node.ucbTable[self.current[0], 0] = Node.ucbTable[self.current[0], 0] + ucb
         # print("self.contextM", self.contextM)
-        # print("Node.ucbTable", Node.ucbTable)
-
-    def chooseAction(self):  # select an action for the next state
-        """
-        input: state
-        :return: R
-        """
-
-        maxQ = max(Node.qTable[:, 0])
-        actionCandi = np.argwhere(Node.qTable[:, 0] == maxQ).flatten()
-        print(" %%%%%%%%%%%%%%% PROBLEM %%%%%%%%%%%% ")
-        print(actionCandi)
-        action = random.choice(np.intersect1d(nextActions, actionCandi))
-
-        # Update the current state
-        self.current = (action, 0)
-
-        # keep track of the action on temporary monitor
-        self.monitor[action, 0] = 1
-        # keep track of the action on the real monitor
-        # self.monitor[action, 0] = 1
-
-        else:
-            maxQ = max(Node.qTable[self.current[0], :])
-            actionCandi = np.argwhere(Node.qTable[self.current[0], :] == maxQ).flatten()
-            action = random.choice(np.intersect1d(nextActions, actionCandi))
-
-            # Update the current state
-            self.current = (self.current[0], action)
-            # keep track of the action on temporary monitor
-            self.monitor[self.current[0], action] = 1
-            # keep track of the action on the real monitor
-            # self.monitor[self.current[0], action] = 1
-        return action
-
-    def select(self):  # don't return because it needs to run continuously
-        """
-        :input: state
-        :return: a(argmax Q(<s, a>))
-        """
-        while self.isFullyExpanded() == (False, False):
-            if self.N == 0:
-                R = self.rollout()
-            else:
-                if self.depth == 0:
-                    actions = np.argwhere(Node.qTable[:, 0]).flatten()
-                else:
-                    actions = np.argwhere(Node.qTable[self.current[0], :]).flatten()
-                ucb = self.exploreConstant * math.sqrt(math.log(self.N(self.current[0])) / self.N(self.current))
-
-                Qli = []
-                for a in actions:
-
-                    Q = q +
-                    Qli.append(Q)
-
-                maxQ = max(Qli)
-                actionCandi = np.argwhere(Node.qTable[self.current[0], :] == maxQ).flatten()
-                action = random.choice(np.intersect1d(nextActions, actionCandi))
-                bestAction =
-
-                action = np.argmax(legalActions)
-
-
-            # action = self.chooseAction(heuristic=True, state=state)
-            # # update current state for the parent
-            # self.current = (action, 0)  # root
-            # print("chosen action: ", action)
-            # newNode = Node(prbIdx=None, current=self.current, parent=self)
-            # self.expand(newNode)
-            #
-            # while self.isFullyExpanded(state=state, traverse=self.traverse) == (True, False):
-            #     action = self.chooseAction(heuristic=True, state=state)
-            #     # Expand
-            #     self.current = (self.current[0], action)
-            #     print("chosen action: ", action)
-            #     newNode = Node(prbIdx=None, current=self.current, parent=self)
-            #     self.expand(newNode)
-
-    def expand(self, newNode):
-        """
-        Make a new child to append to a self.children list with either a state or state, action pairs.
-        Do I need to append children or just a current state?
-        """
-        Node.visits[self.current] += 1
-        # root visits
-        Node.visits[(-1, -1)] += 1
-        self.children.append(newNode)
-        print("self.children:", self.children)
-
-    def rollout(self, policy=None):
-        """
-        :input: s', a' d
-        :return: R
-        """
-        if self.depth == 0:
-            nextActions = np.argwhere(self.monitor[:, 0] == 0).flatten()  # element
-            action = random.choice(nextActions)
-            self.current = (action, 0)
-
-        elif self.depth == 1:
-            nextActions = np.argwhere(self.monitor[self.current[0], 0] == 0).flatten()  # element
-            action = random.choice(nextActions)
-            self.current = (self.current[0], action)
-        else:
-            nextActions = self.cardAvail[self.current[0] * 4 + self.current[1]]
-            action = random.choice(nextActions)
-            self.current = self.leafState[action]  # end-reward
-
-        numCards = self.contextM[self.current]
-        if numCards == 0:
-            r = 0
-        else:
-            r = 1/numCards
-        R = r * self.gamma ^ self.depth
-        return R
-
-    def backprop(self, reward):
-        #if self.isFullyExpanded(state=self.monitor, traverse=self.traverse) == (True, True):
-        # print("len(self.children)", len(self.children))
-        for child_i, child in enumerate(self.children):  # Better to divide the depth? But the depth is already coded in the coordinates.
-            # print("this is the child", child.current)
-            Node.visits[child.current] += 1
-            self.updateQtable(reward=reward)
-
-            if child.parent is not None:
-                child.parent.visits[child.parent] += 1
-
-
+        print("Node.ucbTable", Node.ucbTable)
+        print("Node.qTable", Node.qTable)

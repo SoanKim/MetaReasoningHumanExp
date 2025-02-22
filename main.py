@@ -16,9 +16,11 @@ scores = []
 # print("len(data):", len(data))
 # total = np.zeros((3, 5))
 
-for prbIdx in range(3):
+for prbIdx in range(1):
     print("************************* new problem starts *****************************")
-    root = Node(prbIdx=prbIdx, current=None, traverse=False, parent=None)
+    node = Node(prbIdx=prbIdx, current=None, parent=None)
+    node.search()
+
     # action = root.select()
     # reward = root.rollout()
     # root.backprop(reward=reward)
