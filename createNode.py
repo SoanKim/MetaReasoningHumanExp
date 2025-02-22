@@ -11,11 +11,8 @@ from createGame import *
 from collections import defaultdict
 import math
 
-"""
-TO DO:
-keep track of every child's visits
-update qtable and ucb table of every child
-"""
+# TO DO: keep track of every child's visits & update qtable and ucb table of every child
+
 class Node:
     visits = defaultdict(lambda: 0)  # please initialize this every trial
     qTable = np.zeros((3, 5))
