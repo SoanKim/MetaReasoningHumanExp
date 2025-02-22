@@ -13,11 +13,12 @@ import math
 
 # TO DO: keep track of every child's visits & update qtable and ucb table of every child
 
+
 class Node:
     visits = defaultdict(lambda: 0)  # please initialize this every trial
     qTable = np.zeros((3, 5))
     ucbTable = np.empty((3, 5))
-    probTable = np.empty((3, 5))  # prob of successful visits
+    # probTable = np.empty((3, 5))  # prob of successful visits
 
     # all these properties are from temporal values
     def __init__(self, prbIdx=None, current=None, parent=None):
@@ -25,7 +26,6 @@ class Node:
         self.prbIdx = 0 if prbIdx is None else prbIdx
         self.game = Game(self.prbIdx)
         self.contextM, self.cardAvail, self.answer, self.monitor, self.leafState = self.game.prbInit()
-        print("self.leafstate", self.leafState)
         # C for UCB
         self.exploreConstant = 2
         self.gamma = 0.95
@@ -61,7 +61,6 @@ class Node:
 
     def isFullyExpanded(self):  # checking if it reached the leaf state
         rowSum = [sum(row) for row in self.monitor]
-
         if np.sum(self.monitor[:, 0]) < 3 and 5 not in rowSum:
             self.depth = 0  # num of children = 3
             return False, False
@@ -81,9 +80,6 @@ class Node:
         parent = Node(prbIdx=self.prbIdx, current=(self.current[0], 0), parent=self)
         newChild = Node(prbIdx=self.prbIdx, current=self.current, parent=parent)
         self.children.append(newChild)
-
-        # add children
-
         print("len children: {}".format(len(self.children)))
         print("self.current:{}".format(self.current))
 
@@ -93,7 +89,6 @@ class Node:
             final = False
         rwd = self.rollout(final=final)
         self.backprop(rwd)
-        print("rwd: {}".format(rwd))
         print("Node.visits", Node.visits)
 
     def getReward(self):
@@ -105,7 +100,6 @@ class Node:
 
     def backprop(self, reward):
         for child_i, child in enumerate(self.children):
-            print("child #: {}, current: {}".format(child_i, child.current))
             Node.visits[child.current] += 1
             self.updateUCB(reward=reward)
             self.N += 1
@@ -120,7 +114,6 @@ class Node:
         :input: s', a' d
         :return: R from depth 2
         """
-
         if self.depth == 2:
             numCards = self.contextM[self.current]
             if numCards == 0:
@@ -142,9 +135,13 @@ class Node:
         input: current state
         :return: next state and depth + 1
         """
+
+        START FROM HERE
         if self.depth == 0:
-            maxUCB = max(Node.ucbTable[:, 0])
-            actions = np.argwhere(Node.ucbTable[:, 0] == maxUCB).flatten()
+            legalAction = np.argwhere(self.monitor[:, 0] == 0).flatten()  # rows
+            legalUCBmat = np.take(Node.ucbTable[:, 0], legalAction)
+            maxUCB = max(legalUCBmat)
+            actions = np.argwhere(legalUCBmat == maxUCB).flatten()
 
             # update the location
             if len(actions) > 1:
@@ -153,7 +150,6 @@ class Node:
                 action = actions
             print("maxUCB", maxUCB)
             print("best action:", action)
-
             self.current = (action, 0)
 
         elif self.depth == 1:
