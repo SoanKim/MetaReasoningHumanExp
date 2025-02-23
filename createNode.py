@@ -59,6 +59,7 @@ class Node:
         |---|---|---|---|---|
         """
 
+    # THIS IS WRONG
     def isFullyExpanded(self):  # checking if it reached the leaf state
         rowSum = [sum(row) for row in self.monitor]
         if np.sum(self.monitor[:, 0]) < 3 and 5 not in rowSum:
@@ -71,25 +72,21 @@ class Node:
             self.depth = 2  # num of cards varies across trials
             return True, True
 
-    def search(self):
+    def search(self, parent):
+        # Consider depth
         if self.N == 0:
-            while self.isFullyExpanded() != (True, True):
-                self.select()  # get actions recursively
-        else:
-            self.select()
-        parent = Node(prbIdx=self.prbIdx, current=(self.current[0], 0), parent=self)
-        newChild = Node(prbIdx=self.prbIdx, current=self.current, parent=parent)
-        self.children.append(newChild)
-        print("len children: {}".format(len(self.children)))
-        print("self.current:{}".format(self.current))
-
-        if self.isFullyExpanded() == (True, True):
-            final = True
-        else:
-            final = False
-        rwd = self.rollout(final=final)
-        self.backprop(rwd)
-        print("Node.visits", Node.visits)
+            rwd = self.rollout(final=False, parent=parent)
+            self.backprop(rwd)
+            print("reward when N is 0", rwd)
+        else:  # THIS LOOP IS NOT REACHED
+            while self.depth < 2:
+                self.select(parent=parent)
+                rwd = self.rollout(final=True, parent=parent)
+                print("reward when N is not 0 and depth < 2", rwd)
+                self.backprop(rwd)
+            reward = self.getReward()
+            print("final reward", reward)
+            self.backprop(reward=reward)
 
     def getReward(self):
         if self.depth == 2:
@@ -108,75 +105,81 @@ class Node:
             if child.parent is not None:
                 Node.visits[child.parent.current] += 1
 
-    def rollout(self, final: bool, rolloutPolicy=None):
+    def rollout(self, parent, final: bool, rolloutPolicy=None):
         """
-        todo: get the reward from the leaf node
+        todo: choose actions recursively to get the reward from the leaf node
         :input: s', a' d
         :return: R from depth 2
         """
-        if self.depth == 2:
-            numCards = self.contextM[self.current]
-            if numCards == 0:
-                r = 0
-            else:
-                r = 1/numCards
-            if final:
-                rwd = self.getReward()
-                R = r + r * pow(self.gamma, self.depth) * rwd
-            else:
-                R = r + r * pow(self.gamma, self.depth)
+        while self.depth < 2:
+            self.select(parent=parent)
+        numCards = self.contextM[self.current]
+        if numCards == 0:
+            r = 0
         else:
-            raise ValueError('Not yet a leaf node (depth != 2)')
+            r = 1/numCards
+        if final:
+            rwd = self.getReward()
+            R = r + r * pow(self.gamma, self.depth) * rwd
+        else:
+            R = r + r * pow(self.gamma, self.depth)
         return R
 
-    def select(self, treePolicy=None):
+    def select(self, parent, treePolicy=None):
         """
-        todo: choose actions recursively till the leaf
+        todo: choose one action among current states
         input: current state
         :return: next state and depth + 1
         """
-
-        START FROM HERE
+        print("currentDepth: ", self.depth)
         if self.depth == 0:
-            legalAction = np.argwhere(self.monitor[:, 0] == 0).flatten()  # rows
-            legalUCBmat = np.take(Node.ucbTable[:, 0], legalAction)
-            maxUCB = max(legalUCBmat)
-            actions = np.argwhere(legalUCBmat == maxUCB).flatten()
-
-            # update the location
-            if len(actions) > 1:
-                action = random.choice(actions)
-            else:
-                action = actions
-            print("maxUCB", maxUCB)
-            print("best action:", action)
-            self.current = (action, 0)
-
+            monitorRange = self.monitor[:, 0]
+            ucbRange = Node.ucbTable[:, 0]
         elif self.depth == 1:
-            maxUCB = max(Node.ucbTable[self.current[0], 1:])
-            actions = np.argwhere(Node.ucbTable[self.current[0], 1:] == maxUCB).flatten() + 1
-            # update the location
-            if len(actions) > 1:
-                action = random.choice(actions)
-            else:
-                action = actions
-            print("maxUCB", maxUCB)
-            print("best action:", action)
-            self.current = (self.current[0], action)
-
+            monitorRange = self.monitor[self.current[0], :]
+            ucbRange = Node.ucbTable[self.current[0], :]
         else:
-            self.current = self.current
-            print("It's already at leaf node. Roll out.")
+            monitorRange = None
+            ucbRange = None
+        print("UCB range:", ucbRange)
+        print("depth before: {}".format(self.depth))
+        legalAction = np.argwhere(monitorRange == 0).flatten()  # rows
+        print("+++++++++++ legalAction: +++++++++++++", legalAction)
+        legalUCBmat = np.take(ucbRange, legalAction)
+        print("%%%%%%%%%%%% legalUCBmat: %%%%%%%%%%%%", legalUCBmat)
+        maxUCB = max(legalUCBmat)
+        print("maxUCB", maxUCB)
+        actions = np.argwhere(legalUCBmat == maxUCB).flatten()
+
+        # update the location
+        if len(actions) > 1:
+            action = random.choice(actions)
+        else:
+            action = actions[0]
+        print("best action:", action)
+
+        if self.depth == 0:
+            self.current = (action, 0)
+        elif self.depth == 1:
+            self.current = (self.current[0], action)
+        else:
+            self.current = None
+        self.depth += 1
 
         self.monitor[self.current] = 1
+        Node.visits[self.current] += 1
         print("self.monitor")
         print(self.monitor)
-        print("depth: {}".format(self.depth))
+        print("depth after: {}".format(self.depth))
+        newChild = Node(prbIdx=self.prbIdx, current=self.current, parent=parent)
+        self.children.append(newChild)
 
-    def updateUCB(self, reward):
+    def updateUCB(self, reward): #parent's current?
         childN = Node.visits[self.current]
         if childN == 0:
             Node.ucbTable[self.current] = np.inf
+        else:
+            Node.ucbTable[self.current] = reward  # PROBLEMP: UCB table's node N is too high and it's not exploring
         if self.depth == 0:
             parentN = Node.visits[-1, -1]
         elif self.depth == 1:

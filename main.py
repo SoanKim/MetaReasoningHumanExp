@@ -18,8 +18,8 @@ scores = []
 
 for prbIdx in range(2):
     print("************************* new problem starts *****************************")
-    node = Node(prbIdx=prbIdx, current=None, parent=None)
-    node.search()
+    node = Node(prbIdx=prbIdx, current=None, parent=None) # <-- parent
+    node.search(parent=node)
 
     # action = root.select()
     # reward = root.rollout()
