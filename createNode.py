@@ -11,13 +11,12 @@ from createGame import *
 from collections import defaultdict
 import math
 
-# TO DO: keep track of every child's visits & update qtable and ucb table of every child
-
+# TO DO: USE self.isExpanded  and keep track of the depth instead of manually updating the depth.
 
 class Node:
     visits = defaultdict(lambda: 0)  # please initialize this every trial
     qTable = np.zeros((3, 5))
-    ucbTable = np.empty((3, 5))
+    ucbTable = np.full((3, 5), np.inf)
     # probTable = np.empty((3, 5))  # prob of successful visits
 
     # all these properties are from temporal values
@@ -26,6 +25,7 @@ class Node:
         self.prbIdx = 0 if prbIdx is None else prbIdx
         self.game = Game(self.prbIdx)
         self.contextM, self.cardAvail, self.answer, self.monitor, self.leafState = self.game.prbInit()
+
         # C for UCB
         self.exploreConstant = 2
         self.gamma = 0.95
@@ -74,7 +74,7 @@ class Node:
 
     def search(self, parent):
         # Consider depth
-        if self.N == 0:
+        if Node.visits[self.current] == 0:
             rwd = self.rollout(final=False, parent=parent)
             self.backprop(rwd)
             print("reward when N is 0", rwd)
@@ -164,10 +164,10 @@ class Node:
             self.current = (self.current[0], action)
         else:
             self.current = None
-        self.depth += 1
+
 
         self.monitor[self.current] = 1
-        Node.visits[self.current] += 1
+
         print("self.monitor")
         print(self.monitor)
         print("depth after: {}".format(self.depth))
@@ -176,8 +176,9 @@ class Node:
 
     def updateUCB(self, reward): #parent's current?
         childN = Node.visits[self.current]
+        Node.visits[self.current] += 1
         if childN == 0:
-            Node.ucbTable[self.current] = np.inf
+             Node.ucbTable[self.current] = np.inf
         else:
             Node.ucbTable[self.current] = reward  # PROBLEMP: UCB table's node N is too high and it's not exploring
         if self.depth == 0:
@@ -186,14 +187,17 @@ class Node:
             parentN = Node.visits[self.current[0], 0]
         else:
             parentN = Node.visits[self.current]
+
         print("parentN: {}, childN: {}".format(parentN, childN))
         # delta = reward - Node.qTable[self.current] / childN
 
         Node.qTable[self.current] = Node.qTable[self.current] + reward
         # update the root as well
         Node.qTable[self.current[0], 0] = Node.qTable[self.current[0], 0] + reward
-
-        ucb = Node.qTable[self.current] + self.exploreConstant * math.sqrt(math.log(parentN) / childN)
+        if childN == 0:
+            ucb = np.inf
+        else:
+            ucb = Node.qTable[self.current] + self.exploreConstant * math.sqrt(math.log(parentN) / childN)
         print("ucb:{}".format(ucb))
         Node.ucbTable[self.current] = Node.ucbTable[self.current] + ucb
         # update the root as well

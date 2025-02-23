@@ -16,7 +16,7 @@ scores = []
 # print("len(data):", len(data))
 # total = np.zeros((3, 5))
 
-for prbIdx in range(2):
+for prbIdx in range(1):
     print("************************* new problem starts *****************************")
     node = Node(prbIdx=prbIdx, current=None, parent=None) # <-- parent
     node.search(parent=node)
