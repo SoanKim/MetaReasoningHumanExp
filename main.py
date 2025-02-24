@@ -7,7 +7,8 @@
 from humanData import *
 # from createMCTS import MCTS
 from createGame import Game
-from createNode import Node
+# from createNode import Node
+from newNode import Node
 import random
 import matplotlib.pyplot as plt
 
@@ -19,7 +20,9 @@ scores = []
 for prbIdx in range(1):
     print("************************* new problem starts *****************************")
     node = Node(prbIdx=prbIdx, current=None, parent=None) # <-- parent
-    node.search(parent=node)
+    node.traverse(parent=node)
+
+    # print(best)
 
     # action = root.select()
     # reward = root.rollout()
