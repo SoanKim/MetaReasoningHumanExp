@@ -20,7 +20,6 @@ class Game:
         self.answer = self.env[1]
         self.leafLen = np.zeros((len(df), 4, 3))
         self.contextM = np.zeros((len(df), 3, 5))
-        self.navi = np.zeros_like(self.contextM)
 
         # It is the final state right before receiving rwd at the end of the context matrix.
         self.cardAvail = []  # list of len(3): [[[], [], [], []], [[], [], [], []], [[], [], [], []]]
@@ -83,37 +82,37 @@ class Game:
 
             self.terminalState[prbIdx] = temp  # correct
 
-        return (self.contextM[self.prbIdx], self.cardAvail[self.prbIdx], self.answer[self.prbIdx],
-                self.navi[self.prbIdx], self.terminalState[self.prbIdx])
-
-    def legalMove(self, element=None):
-        if not element:
-            positions = np.argwhere(self.navi[self.prbIdx, :, 0] == 0)
-        else:
-            positions = np.argwhere(self.navi[self.prbIdx, element, :] == 0)
-        positionAvail = positions.flatten()
-        return positionAvail
-
-    def move(self, element=None, action=None):
-        positionAvail = self.legalMove(element)
-        # track state depth s0: root -> s1: child > s2: leaf
-        if element is None:  # if any child was chosen on the root
-            self.navi[self.prbIdx, action, element] = 1
-        else:
-            if action in positionAvail:
-                if np.sum(self.navi[self.prbIdx, element, :]) < 5:
-                    self.navi[self.prbIdx, element, action + 1] = 1
-            else:
-                raise ValueError("Illegal move!")
-
-    def getReward(self, element, action):
-        finalChoice = element * 4 + action
-        if finalChoice == self.answer[self.prbIdx]:
-            rwd = 1
-        else:
-            rwd = 0
-        reward = self.leafLen[self.prbIdx, element, finalChoice] * rwd
-        return reward
+        return (self.contextM[self.prbIdx], self.cardAvail[self.prbIdx],
+                self.answer[self.prbIdx], self.terminalState[self.prbIdx])
+    #
+    # def legalMove(self, element=None):
+    #     if not element:
+    #         positions = np.argwhere(self.navi[self.prbIdx, :, 0] == 0)
+    #     else:
+    #         positions = np.argwhere(self.navi[self.prbIdx, element, :] == 0)
+    #     positionAvail = positions.flatten()
+    #     return positionAvail
+    #
+    # def move(self, element=None, action=None):
+    #     positionAvail = self.legalMove(element)
+    #     # track state depth s0: root -> s1: child > s2: leaf
+    #     if element is None:  # if any child was chosen on the root
+    #         self.navi[self.prbIdx, action, element] = 1
+    #     else:
+    #         if action in positionAvail:
+    #             if np.sum(self.navi[self.prbIdx, element, :]) < 5:
+    #                 self.navi[self.prbIdx, element, action + 1] = 1
+    #         else:
+    #             raise ValueError("Illegal move!")
+    #
+    # def getReward(self, element, action):
+    #     finalChoice = element * 4 + action
+    #     if finalChoice == self.answer[self.prbIdx]:
+    #         rwd = 1
+    #     else:
+    #         rwd = 0
+    #     reward = self.leafLen[self.prbIdx, element, finalChoice] * rwd
+    #     return reward
 
 
 # if __name__ == "__main__":

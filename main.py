@@ -5,56 +5,24 @@
 # Explanation: (Enter explanation here)
 
 from humanData import *
-# from createMCTS import MCTS
-from createGame import Game
-# from createNode import Node
-from newNode import Node
-import random
-import matplotlib.pyplot as plt
+from createNode import Node
+from treeSearch import MCTS
+
 
 data = df1Subj1
 scores = []
 # print("len(data):", len(data))
 # total = np.zeros((3, 5))
 
+
 for prbIdx in range(1):
+    TS = MCTS(prbIdx)
     print("************************* new problem starts *****************************")
-    node = Node(prbIdx=prbIdx, current=None, parent=None) # <-- parent
-    node.traverse(parent=node)
-
-    # print(best)
-
-    # action = root.select()
-    # reward = root.rollout()
-    # root.backprop(reward=reward)
-    # print("root.ucbTable", root.ucbTable)
-
-    # root.select()
-    # root.expand()
-    # root.rollout()
-    # root.backprop()
+    TS.rollout()
+    TS.bestChild()
 
 
-    # root.expand(parent=root)
-    #leafVal = root.expand(parent=root, heuristic=True)
 
-
-        #root.backprop()
-    #newNode = bestChild.select(policy=True)
-
-    # # Check the total number of cases
-    # game = Game(prbIdx=prbIdx)
-    # contextM, cardAvail, answer, navi, leafState = game.prbInit()
-    #
-
-#     for row in range(contextM.shape[0]):
-#         for col in range(contextM.shape[1]):
-#             total[row][col] += contextM[row][col]
-#
-# print("total")
-# print(total)
-# normalized = total[:, 0] / total[:, 0].sum()
-# print(normalized)
 
 
 
