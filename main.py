@@ -14,12 +14,22 @@ scores = []
 # print("len(data):", len(data))
 # total = np.zeros((3, 5))
 
-
 for prbIdx in range(1):
     TS = MCTS(prbIdx)
     print("************************* new problem starts *****************************")
+    # tempMonitor = TS.traverse()
+    # TS.backprop(tempMonitor)
+    # TS.bestChild()
     TS.rollout()
-    TS.bestChild()
+
+
+
+
+
+
+
+
+
 
 
 

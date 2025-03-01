@@ -4,13 +4,8 @@
 # Title: (Enter feature name here)
 # Explanation: (Enter explanation here)
 
-
 from createGame import *
-from collections import defaultdict
-import math
 
-
-# TO DO: USE self.isExpanded  and keep track of the depth instead of manually updating the depth.
 
 class Node:
 
@@ -37,9 +32,7 @@ class Node:
         | 2 | 1 | 2 | 3 | 4 |   sum(2nd-5th cols) == 12: depth 3
         |---|---|---|---|---|
         """
-    #
 
-    #
     # def horiLegalMoves(self, monitor):
     #     if self.isFullyExpanded(monitor=monitor) == (False, False):
     #         self.depth = 0
@@ -58,22 +51,7 @@ class Node:
     #     print("transProb:", transProb)
     #     return actions, transProb
     #
-    # def expand(self):  # add tree policy later
-    #     """
-    #     expanding one step further with a real monitor
-    #     """
-    #     if self.depth == 0:
-    #         nextActions = np.argwhere(self.monitor[self.current[0], :] == 0).flatten()
-    #     elif self.depth == 1:
-    #         nextActions = self.selectCard()
-    #     else:
-    #         nextActions = None
-    #
-    #     if nextActions:
-    #         action = self.select(legalActions=nextActions)
-    #     else:
-    #         return None
-    #     return action
+
     #
 
     #
