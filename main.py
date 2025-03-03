@@ -12,15 +12,56 @@ from treeSearch import MCTS
 data = df1Subj1
 scores = []
 # print("len(data):", len(data))
-# total = np.zeros((3, 5))
+
 
 for prbIdx in range(1):
+    #monitor = np.zeros((3, 5))
+    print(f"************************* new problem starts: #{prbIdx} *****************************")
     TS = MCTS(prbIdx)
-    print("************************* new problem starts *****************************")
-    # tempMonitor = TS.traverse()
-    # TS.backprop(tempMonitor)
-    # TS.bestChild()
-    TS.rollout()
+    TS.traverse(node=None)
+    bestChild1 = TS.getBestChild(node=None)
+
+    TS.traverse(node=bestChild1)
+    bestChild2 = TS.getBestChild(node=bestChild1)
+
+    bestChild3 = TS.getFinalChildCurrent()
+    if bestChild3 is None:
+        reward = TS.selectCard(bestChild2)
+    else:
+        reward = TS.selectCard(bestChild3)
+    print(f" ================= final reward is: {reward} ==================")
+
+
+
+
+
+
+
+
+    ######## testing #######
+    # depth = TS.getDepth(root)
+    # print(f"depth: {depth}")
+    # state, prob = TS.getState(root)
+    # print(f"getState, prob: {state}, {prob}")
+    # # leafVal = TS.getLeafVal(root.current)
+    # # print(f"leafVal: {leafVal}")
+    # print(f"is leaf? {TS.isLeaf(root)}")
+    # print(f"is fullyExpanded? {TS.isFullyExpanded(root)}")
+    # bestAction = TS.selectArm(root)
+    # print(f"bestAction: {bestAction}")
+
+
+
+    #print(bestChild2.__dict__)
+    # TS.expand(bestChild2)
+
+
+
+
+
+
+
+
 
 
 

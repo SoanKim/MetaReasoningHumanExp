@@ -5,6 +5,7 @@
 # Explanation: (Enter explanation here)
 
 from createGame import *
+from collections import defaultdict
 
 
 class Node:
@@ -15,16 +16,19 @@ class Node:
         self.parent = self if None else parent  # None for root
 
         # a state node has child nodes (state and action pairs))
-        self.children = []  # {}  # defaultdict(lambda: 0)  or [[], []]  or defaultdict(tuple) for self.children[(element, action)] = leafValue
+        self.children = []
 
         # track N of the current node
         self.N = 0
 
         # reward comes from the leaf value
-        self.Q = 0
+        self.R = 0
+
+        # needed?
+        self.ucb = np.inf
 
         # row and column coordinates. (NaN, NaN) for root. Keep track of the current location regardless who you are.
-        self.current = (np.nan, np.nan) if current is None else current
+        self.current = None if current is None else current
         """
         |---|---|---|---|---|   sum(1st col) < 3: depth 1          
         | 0 | 1 | 2 | 3 | 4 |   sum(1st col) == 3: depth 2         
