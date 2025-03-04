@@ -13,23 +13,13 @@ data = df1Subj1
 scores = []
 # print("len(data):", len(data))
 
-
+rewards = 0
 for prbIdx in range(1):
-    #monitor = np.zeros((3, 5))
     print(f"************************* new problem starts: #{prbIdx} *****************************")
     TS = MCTS(prbIdx)
     TS.traverse(node=None)
     bestChild1 = TS.getBestChild(node=None)
-
     TS.traverse(node=bestChild1)
-    bestChild2 = TS.getBestChild(node=bestChild1)
-
-    bestChild3 = TS.getFinalChildCurrent()
-    if bestChild3 is None:
-        reward = TS.selectCard(bestChild2)
-    else:
-        reward = TS.selectCard(bestChild3)
-    print(f" ================= final reward is: {reward} ==================")
 
 
 

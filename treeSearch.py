@@ -8,7 +8,6 @@ from createGame import *
 import numpy as np
 from createNode import Node
 from collections import defaultdict
-from copy import deepcopy
 import math
 import random
 
@@ -38,13 +37,19 @@ class MCTS:
         self.root = Node(current=None, parent=None)
 
         # nested_dict['person1']['name'] = 'Alice'
-        # nested_dict['person1']['age'] = 30
-        # nested_dict['person2']['city'] = 'New York'
+
+    def isFullyExpanded(self, node):
+        if np.all(self.monitor[:, 0]) == 0:
+            return False, False
+        elif np.all(self.monitor[:, 0]) == 1 and np.all(self.monitor[node.current[0], 1:]) == 0:
+            return True, False
+        elif np.all(self.monitor[:, 0]) == 1 and np.any(self.monitor[node.current[0], 1:]) == 1:
+            return True, True
 
     def getState(self, node):
-        assert self.depth < 3, "It is depth 3."
-        if self.depth < 1:
-            state = np.argwhere(self.monitor[:,  0] == 0).flatten()
+        # assert self.depth < 3, "It is depth 3."
+        if self.depth == 0:
+            state = np.argwhere(self.monitor[:, 0] == 0).flatten()
             prob = MCTS.ucbTable[state, 0]
         else:
             state = np.argwhere(self.monitor[node.current[0], 1:] == 0).flatten() + 1
@@ -60,19 +65,8 @@ class MCTS:
             reward = 0
         return reward
 
-    # def isLeaf(self, node):
-    #     return len(node.children) == 0
-
-    # def isFullyExpanded(self):
-    #     if self.depth == 0:
-    #         state = self.monitor.T
-    #     else:
-    #         state = self.monitor
-    #     rows = [row for row in state]
-    #     if np.any(np.all(rows) == 1):
-    #         return True
-    #     else:
-    #         return False
+    def isLeaf(self, node):
+        return len(node.children) == 0
 
     def argMaxAction(self, state, probs):  # greedy action
         if len(set(probs)) == 1:
@@ -82,12 +76,9 @@ class MCTS:
         return bestAction
 
     def selectArm(self, node):
-        """
-        :return: action
-        """
         state, prob = self.getState(node)
-        print("state", state)
-        print("prob", prob)
+        print(f"state {state}")
+        print(f"prob {prob}")
         assert len(state) == len(prob), "The length of state and action doesn't match"
         action = self.argMaxAction(state, prob)
         return action
@@ -130,11 +121,22 @@ class MCTS:
         node.parent.children.append(node)
         print("node.parent.children:", node.parent.children)
 
-        print("monitor\n", self.monitor)  # should be refreshed every trial
-        #print("visits\n", MCTS.visits)
+        print("monitor\n", self.monitor)
+        print("visits\n", MCTS.visits)
         print("qTable\n", MCTS.qTable)
         print("freqTable\n", MCTS.freqTable)
         print("ucbTable\n", MCTS.ucbTable)
+
+    def rollout(self, node):
+        bestAction = self.selectArm(node)
+        print(f"bestAction: {bestAction}")
+        current = self.markCurrent(bestAction, node=node)
+        print(f"current: {current}")
+        child = Node(current=current, parent=node)
+        leafVal = self.getLeafVal(current=current)
+        self.backprop(reward=leafVal, node=child)
+        print(f"leafValue: {leafVal}")
+        return leafVal, current
 
     def traverse(self, node):
         """
@@ -147,20 +149,22 @@ class MCTS:
         else:
             node = self.root
 
-        while len(self.getState(node)[0]) > 0:
-            print(f" =============== depth {self.depth} =============")
-            bestAction = self.selectArm(node)
-            print(f"bestAction: {bestAction}")
-            current = self.markCurrent(bestAction, node=node)
-            #print(f"current: {current}")
-            child = Node(current=current, parent=node)
-            print(f"child.parent.current: {child.parent.current}")
-            reward = self.getLeafVal(current=current)
-            #print(f"reward: {reward}")
-            self.backprop(reward=reward, node=child)
-        self.depth += 1
-        print(f"&&&&&&&&&&&&&& depth: {self.depth} &&&&&&&&&&&&&&&")
-        print(f"parent.N: {node.N}")
+        if self.depth == 0:
+            while len(self.getState(node)[0]) > 0:
+                print(f" ============== Starting depth {self.depth} =============")
+                reward, current = self.rollout(node)
+            self.depth += 1
+        else:
+            print(" ##################### depth 1 starts ####################")
+            if np.all(self.monitor[node.current[0], 1:]) == 0:
+                reward, current = self.rollout(node)
+            self.depth += 1
+            while self.getBestRoot() is not None:
+                newParent = self.getBestRoot()
+                print(f" $$$$$$$$$$$$$ newParent $$$$$$$$$$$$", newParent.current)
+                reward, current = self.rollout(newParent)
+            self.depth += 1
+            finalReward = self.selectCard(current)
 
     def getBestChild(self, node):
         assert self.depth < 3, "depth must be less than 3 to choose the best child."
@@ -185,13 +189,10 @@ class MCTS:
 
     def getBestRoot(self):
         bestRoot = np.argmax(self.ucbTable[:, 0])
-        # print("bestRoot:", bestRoot)
-        # print("self.root.children")
         for child in self.root.children:
-            #print("child.current", child.current)
             if child.current == (bestRoot, 0):
-                if len(child.children) == 0:
-                    print(f"This node {child.current} has never been explored!")
+                if self.isLeaf(child):
+                    print(f"This node {child.current} has never been expanded!")
                     return child
 
     def getBestParent(self):
@@ -206,25 +207,6 @@ class MCTS:
                 self.traverse(node=bestRoot2)
         print("bestRootLi", bestRootLi)
         return bestRootLi
-
-    def getFinalChildCurrent(self):
-
-        bestParent = self.getBestParent()
-        if len(bestParent) > 0:
-            bestParent = bestParent[-1]
-        else:
-            return None
-        print("bestParent: ", bestParent)
-        bestChild = np.argmax(MCTS.ucbTable[bestParent, 1:]) + 1
-        print("ucbTable", MCTS.ucbTable)
-        print("bestChild: ", bestChild)
-        bestChildCurrent = (bestParent, bestChild)
-        return bestChildCurrent
-
-    # def expand(self, bestChild):
-    #     assert len(bestChild.children) == 0, "Already expanded. Cannot expand it again!"
-    #     print(" +++++++++++++++++++++++++ I'm expanding !!! +++++++++++++++++++++++++ ")
-    #     self.traverse(bestChild)
 
     def markCurrent(self, action, node):
         if type(action) == np.ndarray:
@@ -241,26 +223,30 @@ class MCTS:
         return current
 
     def isTerminal(self):
-        print("sum", np.sum(self.monitor))
         return np.sum(self.monitor) == 15
 
     def getReward(self, cardChosen):
         reward = self.answer == cardChosen
-        print(" #$@#($@#*$#*$&@*$&#@*$ *@&  reward", reward)
-        return reward
+        return int(reward)
 
     def selectCard(self, bestChildCurrent):
-
-        assert self.depth == 3, "You cannot select card before depth 3."
-        print(self.cardAvail)
-        cardsAvail = self.cardAvail[bestChildCurrent[0]][bestChildCurrent[1]-1]
+        #assert self.depth == 3, f"You cannot select card before depth 3. current depth: {self.depth}"
+        print("cards avail", self.cardAvail)
+        cardsAvail = self.cardAvail[bestChildCurrent[0]][bestChildCurrent[1] - 1]
         if len(cardsAvail) == 0:
-            reward = 0
+            print("There is no card available!")
+            bestParent = np.argmax(self.monitor[:, 0])
+            for child in self.root.children:
+                if child.current == (bestParent, 0):
+                    return self.traverse(child)
+
+            # actions = np.argwhere(self.monitor[bestParent, 1:] == 0).flatten() + 1
+            # action = random.choice(actions)
+            # cardsAvail = self.cardAvail[bestParent][action - 1]
+            # cardChosen = random.choice(cardsAvail)
         else:
             cardChosen = random.choice(cardsAvail)
-            print("cardChosen", cardChosen)
+            print("cardChosen: {cardChosen}")
             reward = self.getReward(cardChosen)
-        return reward
-
-
-
+            print(f"***********  reward: {int(reward)}  ***********")
+            return reward
