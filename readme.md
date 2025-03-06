@@ -1,4 +1,6 @@
 # Metareasoning on MCTS
+- Example
+<img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/0116c2a7d2007356a6385c6cd3568c7b725b8f56/mcts.gif"/>
 ## There are 7 files:
 ### 1. createGame.py: 
 - Initialize a problem (import a problem and answer from human data per trial) </br>
@@ -79,8 +81,6 @@ output: update the Q and N
 - keep track of the scores to compare it to a human's
 
 ### 6. results:
-- Example
-<img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/0116c2a7d2007356a6385c6cd3568c7b725b8f56/mcts.gif" width="50%" height="50%"/>
 - Learning curve (MCTS)
 <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/919bc25b5d7b96d8cd50a16f85a656e74146eb0d/MCTSresult.png" width="50%" height="50%"/>
 - Learning curves (Human)
