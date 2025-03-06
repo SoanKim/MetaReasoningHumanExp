@@ -1,6 +1,3 @@
-- Example
-<img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/0116c2a7d2007356a6385c6cd3568c7b725b8f56/mcts.gif"/>
-
 # Metareasoning on MCTS
 ## There are 7 files:
 ### 1. createGame.py: 
@@ -92,3 +89,5 @@ output: update the Q and N
  <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/ucb.gif" width="50%" height="50%"/>
 - Number of visits
  <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/visits.gif" width="50%" height="50%"/>
+- Example
+<img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/0116c2a7d2007356a6385c6cd3568c7b725b8f56/mcts.gif"/>
