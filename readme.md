@@ -80,8 +80,10 @@ output: update the Q and N
 - keep track of the scores to compare it to a human's
 
 ### 6. results:
-- Learning curve
+- Learning curve (MCTS)
 <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/919bc25b5d7b96d8cd50a16f85a656e74146eb0d/MCTSresult.png" width="50%" height="50%"/>
+- Learning curves (Human)
+<img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/42355ce9bf83bcd26c786855e9a0a8f85ae3fe55/%5BExp1.%5D%20human_accuracy.png" width="50%" height="50%"/>
 - Q table
  <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/Q.gif" width="50%" height="50%"/>
 - UCB scores
