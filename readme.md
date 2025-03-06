@@ -1,5 +1,4 @@
 # Metareasoning on MCTS
-- Example
 <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/0116c2a7d2007356a6385c6cd3568c7b725b8f56/mcts.gif"/>
 ## There are 7 files:
 ### 1. createGame.py: 
