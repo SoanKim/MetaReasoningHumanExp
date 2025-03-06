@@ -20,33 +20,33 @@ qTables = []
 ucbTables = []
 freqTables = []
 
-score = 0
-for prbIdx in range(90):
-    print(f"************************* new problem starts: #{prbIdx} *****************************")
-    TS = MCTS(prbIdx)
-    TS.traverse(node=None)
-    bestChild1 = TS.getBestChild(node=None)
-    finalReward = TS.traverse(node=bestChild1)
-    print("finalReward", finalReward)
+agentNum = 2
 
-    score += finalReward
-    scoreHistory.append(score)
-    qTables.append(MCTS.qTable.copy())
-    ucbTables.append(TS.ucbTable.copy())
-    freqTables.append(TS.freqTable.copy())
+for agent in range(agentNum):
+    score = np.zeros((agentNum))
+    for prbIdx in range(90):
+        print(f"************************* new problem starts: #{prbIdx} *****************************")
+        TS = MCTS(prbIdx)
+        TS.traverse(node=None)
+        bestChild1 = TS.getBestChild(node=None)
+        finalReward = TS.traverse(node=bestChild1)
+        print("finalReward", finalReward)
+
+        score[agent] += finalReward
+        scoreHistory.append(score)
+        qTables.append(MCTS.qTable.copy())
+        ucbTables.append(TS.ucbTable.copy())
+        freqTables.append(TS.freqTable.copy())
 
 
-makeGif(qTables, "Q")
-makeGif(ucbTables, "UCB")
-makeGif(ucbTables, "Visits")
+# makeGif(qTables, "Q")
+# makeGif(ucbTables, "UCB")
+# makeGif(ucbTables, "Visits")
 
-# imgs = [Image.matshow(img) for img in qTables]
-# # duration is the number of milliseconds between frames; this is 40 frames per second
-# imgs[0].save("array.gif", save_all=True, append_images=imgs[1:], duration=50, loop=0)
 
-print("avgScoreHistory", scoreHistory)
-fileName = 'MCTSresult.png'
-plotLearning(scoreHistory, filename=fileName, x=90)
+# print("avgScoreHistory", scoreHistory)
+# fileName = 'MCTSresult.png'
+# plotLearning(scoreHistory, filename=fileName, x=90)
 
 
 # startTime = time.time()
