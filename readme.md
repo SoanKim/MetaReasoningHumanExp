@@ -78,3 +78,11 @@ output: update the Q and N
 - iterate through the 90 problems
 - agent solves each problem
 - keep track of the scores to compare it to a human's
+
+### 6. results:
+- Q table
+![me]("https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/Q.gif")
+- UCB scores
+![me]("https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/ucb.gif")
+- Number of visits
+![me]("https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/visits.gif")
