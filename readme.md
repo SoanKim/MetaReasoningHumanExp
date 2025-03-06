@@ -80,9 +80,11 @@ output: update the Q and N
 - keep track of the scores to compare it to a human's
 
 ### 6. results:
+- Learning curve
+<img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/919bc25b5d7b96d8cd50a16f85a656e74146eb0d/MCTSresult.png" width="50%" height="50%"/>
 - Q table
- <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/Q.gif"/>
+ <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/Q.gif" width="50%" height="50%"/>
 - UCB scores
- <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/ucb.gif"/>
+ <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/ucb.gif" width="50%" height="50%"/>
 - Number of visits
- <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/visits.gif"/>
+ <img src="https://github.com/SoanKim/MetaReasoningHumanExp/blob/5ffbdb30a9b71e3999547896feee5726c0cce633/visits.gif" width="50%" height="50%"/>
