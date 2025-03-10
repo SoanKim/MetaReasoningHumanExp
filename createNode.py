@@ -5,7 +5,6 @@
 # Explanation: (Enter explanation here)
 
 from createGame import *
-from collections import defaultdict
 
 
 class Node:
@@ -30,9 +29,10 @@ class Node:
         # row and column coordinates. (NaN, NaN) for root. Keep track of the current location regardless who you are.
         self.current = None if current is None else current
         """
-        |---|---|---|---|---|   sum(1st col) < 3: depth 1          
-        | 0 | 1 | 2 | 3 | 4 |   sum(1st col) == 3: depth 2         
-        | 1 | 1 | 2 | 3 | 4 |   sum(2nd-5th cols) < 12: depth 2    
-        | 2 | 1 | 2 | 3 | 4 |   sum(2nd-5th cols) == 12: depth 3
-        |---|---|---|---|---|
+        |---|---|---|---|  sum(1st col) < 4: depth 1          
+        | 0 | 1 | 2 | 3 |  sum(1st col) == 3: depth 2         
+        | 1 | 1 | 2 | 3 |  sum(2nd-5th cols) < 12: depth 2    
+        | 2 | 1 | 2 | 3 |  sum(2nd-5th cols) == 12: depth 3
+        | 3 | 1 | 2 | 3 |
+        |---|---|---|---|
         """

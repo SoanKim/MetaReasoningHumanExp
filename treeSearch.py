@@ -10,13 +10,14 @@ from createNode import Node
 from collections import defaultdict
 import math
 import random
+from copy import deepcopy
 
 
 class MCTS:
     visits = defaultdict(lambda: 0)  # please initialize this every trial
-    qTable = np.zeros((3, 5))
-    freqTable = np.zeros((3, 5))  # prob of successful visits
-    metaTable = np.zeros((3, 5))
+    qTable = np.zeros((4, 4))
+    freqTable = np.zeros((4, 4))  # prob of successful visits
+    metaTable = np.zeros((4, 4))
 
     def __init__(self, prbIdx):
         # initialize game
@@ -24,20 +25,19 @@ class MCTS:
         self.prbIdx = 0 if prbIdx is None else prbIdx
         self.game = Game(self.prbIdx)
         self.contextM, self.cardAvail, self.answer, self.leafState = self.game.prbInit()
+        print("contextM", self.contextM)
 
         # state
         self.depth = 0
-        self.monitor = np.zeros((3, 5))
+        self.monitor = np.zeros((4, 4))
 
         # hyperparam
         self.gamma = 1
-        self.exploreConstant = 100
+        self.exploreConstant = 7
 
         # root node should be executed inside MCTS to get updated.
         self.root = Node(current=None, parent=None)
-        self.ucbTable = np.full((3, 5), np.inf)
-
-        # nested_dict['person1']['name'] = 'Alice'
+        self.ucbTable = np.full((4, 4), np.inf)
 
     def isFullyExpanded(self, node):
         if np.all(self.monitor[:, 0]) == 0:
@@ -125,14 +125,45 @@ class MCTS:
         print("freqTable\n", MCTS.freqTable)
         print("ucbTable\n", self.ucbTable)
 
+    def expand(self, node):
+        """
+        make the depth deeper
+        """
+        depthRemain = 3 - self.depth
+        if depthRemain == 2:
+        elif depthRemain == 1:
+        else:
+
+
+
     def rollout(self, node):  # if you return a value, it stops after one iteration.
-        bestAction = self.selectArm(node)
-        #print(f"bestAction: {bestAction}")
-        current = self.getCurrent(bestAction, parent=node)
-        #print(f"current: {current}")
-        child = Node(current=current, parent=node)
-        leafVal = self.getLeafVal(current=current)
-        self.backprop(reward=leafVal, node=child)
+        if node.current is None:
+            for i in range(2):
+                action = self.selectArm(node)
+                current = self.getCurrent(action, parent=node)
+                print(f"current at i{i}: {current}")
+
+                if i == 0:
+                    child = Node(current=current, parent=node)
+            leafVal = self.getLeafVal(current=current)
+            self.backprop(reward=leafVal, node=child)
+            print(f"current at depth 0: {current}")
+            print(f"leafVal at depth 0: {leafVal}")
+        else:
+            action = self.selectArm(node)
+            current = self.getCurrent(action, parent=node)
+            leafVal = self.getLeafVal(current=current)
+            self.backprop(reward=leafVal, node=node)
+            print(f"current at depth 1: {current}")
+            print(f"leafVal at depth 1: {leafVal}")
+
+        # bestAction = self.selectArm(node)
+        # #print(f"bestAction: {bestAction}")
+        # current = self.getCurrent(bestAction, parent=node)
+        # #print(f"current: {current}")
+        # child = Node(current=current, parent=node)
+        # leafVal = self.getLeafVal(current=current)
+        # self.backprop(reward=leafVal, node=child)
         #print(f"leafValue: {leafVal}")
         # return leafVal, current
 
