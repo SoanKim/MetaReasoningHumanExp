@@ -6,8 +6,13 @@
 
 from humanData import *
 from treeSearch import MCTS
+import time
+from utils import plotLearning, makeGif
+import matplotlib.pyplot as plt
+from PIL import Image
 import numpy as np
-from utils import *
+
+from matplotlib.pyplot import text
 
 data = df1Subj1
 scoreHistory = []
@@ -15,33 +20,31 @@ qTables = []
 ucbTables = []
 freqTables = []
 
-agentNum = 1
+agentNum = 2
 
-#for agent in range(agentNum):
-score = np.zeros(agentNum)
-for prbIdx in range(1):
-    print(f"************************* new problem starts: #{prbIdx} *****************************")
-    TS = MCTS(prbIdx)
-    TS.traverse(node=None)
-#     bestChild1 = TS.getBestChild(node=None)
-#     print(f"bestChild.current: {bestChild1.current}")
-#     finalReward = TS.traverse(node=bestChild1)
-#     print("finalReward", finalReward)
-#
-#     #score[agent] += finalReward
-#     score += finalReward
-#     scoreHistory.append(score)
-#     qTables.append(MCTS.qTable.copy())
-#     ucbTables.append(TS.ucbTable.copy())
-#     freqTables.append(TS.freqTable.copy())
-#
-#
+for agent in range(agentNum):
+    score = np.zeros((agentNum))
+    for prbIdx in range(90):
+        print(f"************************* new problem starts: #{prbIdx} *****************************")
+        TS = MCTS(prbIdx)
+        TS.traverse(node=None)
+        bestChild1 = TS.getBestChild(node=None)
+        finalReward = TS.traverse(node=bestChild1)
+        print("finalReward", finalReward)
+
+        score[agent] += finalReward
+        scoreHistory.append(score)
+        qTables.append(MCTS.qTable.copy())
+        ucbTables.append(TS.ucbTable.copy())
+        freqTables.append(TS.freqTable.copy())
+
+
 # makeGif(qTables, "Q")
 # makeGif(ucbTables, "UCB")
 # makeGif(ucbTables, "Visits")
-#
-#
-# # print("avgScoreHistory", scoreHistory)
+
+
+# print("avgScoreHistory", scoreHistory)
 # fileName = 'MCTSresult.png'
 # plotLearning(scoreHistory, filename=fileName, x=90)
 
