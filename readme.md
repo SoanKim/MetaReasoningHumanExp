@@ -1,3 +1,5 @@
+⚠️ DEPRECATED: This repository is the legacy research code. For the active, modular framework used in current papers, please see Dual-Process-RL-Reasoning.
+
 # Metareasoning on MCTS
 ## There are 7 files:
 ### 1. createGame.py: 
